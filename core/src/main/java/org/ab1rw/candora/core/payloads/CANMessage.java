@@ -6,7 +6,7 @@ import java.util.Arrays;
  * A generic CANbus message payload obtained from the Linux SocketCAN facility.
  * Note that this is an immutable object.
  */
-public abstract class CANMessage {
+public abstract class CANMessage implements java.io.Serializable {
 
     protected final String gatewayId;
     protected final String interfaceId;
@@ -25,7 +25,7 @@ public abstract class CANMessage {
 
     /**
      *
-     * @return name of the Candora's Box instance.
+     * @return i.e. "localhost"
      */
     public String getGatewayId() {
         return gatewayId;
