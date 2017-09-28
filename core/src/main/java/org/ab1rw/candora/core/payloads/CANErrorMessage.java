@@ -1,23 +1,25 @@
 package org.ab1rw.candora.core.payloads;
-
 import org.ab1rw.candora.core.CANId;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * An Error Message from the Linux SocketCAN facility.
+ *
+ * @see /usr/include/linux/can/error.h
  * Per the Linux SocketCAN Spec, the CANId field will contain the error category,
  * the message payload will contain further details.
  */
 public class CANErrorMessage extends CANMessage {
 
-    private List<String> messages;
+    private final List<String> messages;
     private ERROR_CATEGORY errorCategory;
 
     public CANErrorMessage(String gatewayId, String interfaceId, CANId id, byte[] payload, long kernelTimeStamp) {
         super(gatewayId, interfaceId, id, payload, kernelTimeStamp);
         messages = Collections.unmodifiableList(decode());
+
     }
 
     public ERROR_CATEGORY getErrorCategory() {
@@ -36,11 +38,14 @@ public class CANErrorMessage extends CANMessage {
                 '}';
     }
 
-    // XXX TO DO - LARGE - Map all properties in /usr/include/linux/can/error.h as Java Enums
 
+    /**
+     * Error Categories reported by the Linux CANSocket stack.  For each category, additional
+     * message meta-data may able be available in the payload fields.
+     */
     public static enum ERROR_CATEGORY {
         TX_Timeout(0x1, "TX timeout (by netdevice driver)"),
-        Lost_Arbitration(0x2,"Lost Arbitration"), // bit location
+        Lost_Arbitration(0x2,"Lost Arbitration"), // bit location in data[0]
         Controller_Fault(0x4, "Controller Fault"),//
         Protocol_Violation(0x8, "Protocol Violations"),
         Transceiver_Fault(0x10, "Transceiver Fault"),
@@ -70,13 +75,19 @@ public class CANErrorMessage extends CANMessage {
     }
 
     /**
-     * Provides decode of SocketCAN mystery bits into human readable messages.
+     * Provides a decode of SocketCAN mystery bits into human readable messages.
+     * Depending on the Error Category, further details are hidden in either bits,
+     * or as byte values in the message payload area.
      */
     private List<String> decode() {
         List<String> messages = new LinkedList<String>();
-        // Lost_Arbitration, the bit where the fault happened is in data[0]
 
-        //  Controller_Fault, data[1]
+        // Lost_Arbitration, the bit where the fault happened is in data[0]
+        if (errorCategory.equals(ERROR_CATEGORY.Lost_Arbitration)) {
+            messages.add(String.format("Arbitration failure observed at bit position %d", (int) payload[0]));
+        }
+
+        //  Controller_Fault, details in data[1]
         if (errorCategory.equals(ERROR_CATEGORY.Controller_Fault)) {
             if (payload[1] == 0) messages.add("Unspecified error reported in payload[1]");
             if ((payload[1] & 0x1) != 0) messages.add("Receive buffer overflow");
@@ -86,12 +97,10 @@ public class CANErrorMessage extends CANMessage {
             if ((payload[1] & 0x10) != 0) messages.add("Reached error passive status RX");
             if ((payload[1] & 0x20) != 0)
                 messages.add("Reached error passive status TX, at least one error counter exceeds the protocol-defined level of 127.  ");
-
         }
 
-        // Protocol_Violation data[2] data[3]
+        // Protocol_Violation details in data[2] and data[3]
         if (errorCategory.equals(ERROR_CATEGORY.Protocol_Violation)) {
-
             if (payload[2] == 0) messages.add("Unspecified error reported in data[2]");
             if ((payload[2] & 0x1) != 0) messages.add("Single bit error");
             if ((payload[2] & 0x2) != 0) messages.add("Frame format error");
@@ -101,7 +110,6 @@ public class CANErrorMessage extends CANMessage {
             if ((payload[2] & 0x20) != 0) messages.add("Bus Overload");
             if ((payload[2] & 0x40) != 0) messages.add("Active Error Announcement");
             if ((payload[2] & 0x80) != 0) messages.add("Error occured on Transmission");
-
 
 
             switch (payload[3]) {
@@ -171,7 +179,7 @@ public class CANErrorMessage extends CANMessage {
 
         }
 
-        // Transceiver_Fault data[4]
+        // Transceiver_Fault detail in data[4]
         if (errorCategory.equals(ERROR_CATEGORY.Transceiver_Fault)) {
             switch (payload[4]) {
                 case 0:
@@ -208,7 +216,5 @@ public class CANErrorMessage extends CANMessage {
         }
         return messages;
     }
-
-
 
 }

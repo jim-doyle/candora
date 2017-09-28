@@ -12,4 +12,8 @@
     <artifactId>candoras-box</artifactId>
     <description>Service Gateway Appliance Standalone Application</description>
 
+    <dependencies>
+        <!-- Spring 4 support and Spring Integration dependencies-->
+    </dependencies>
+
 </project>

@@ -21,6 +21,8 @@ public abstract class CANMessage implements java.io.Serializable {
         this.payload = payload;
         this.kernelTimeStamp = kernelTimeStamp;
         // XXX todo add assertions
+        assert id != null;
+        assert payload != null;
     }
 
     /**

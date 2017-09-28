@@ -9,6 +9,7 @@ import org.ab1rw.candora.core.payloads.CANMessage;
  */
 class NativeSocketCANAdapter {
 
+    public native String getVersionInfo();
     /**
      * Initialize the JNI adapter, before any other methods are called.
      */

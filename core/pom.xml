@@ -11,6 +11,8 @@
 
     <artifactId>core</artifactId>
     <description>Core Classes and API</description>
-
+    <dependencies>
+        <!-- The Candora Core API component should have NO OTHER dependencies other than Java SE 8 classes-->
+    </dependencies>
 
 </project>
