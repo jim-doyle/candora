@@ -1,0 +1,14 @@
+*.class
+*.jar
+*.o
+core
+*.swp
+*~
+Thumbs.db
+.DS_Store
+.classpath
+.metadata
+.project
+*.iml
+.idea
+target/
