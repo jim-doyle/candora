@@ -12,4 +12,10 @@ public class CANId {
         bits=Integer.parseInt(arg, radix);
     }
     // XXX to do - the canid_t has masks that need to be applied to extract a PGN, as opposed to error and fault data.
+
+
+    public int getBits() {
+        return bits;
+    }
+
 }

@@ -7,19 +7,66 @@ import java.util.List;
 /**
  * An Error Message from the Linux SocketCAN facility.
  *
- * @see /usr/include/linux/can/error.h
- * Per the Linux SocketCAN Spec, the CANId field will contain the error category,
- * the message payload will contain further details.
+ * @see /usr/include/linux/can/error.h Many of the bitmasks and code values, as well as the
+ * encoding convention in the payload field are covered in this C header file.
+ *
  */
 public class CANErrorMessage extends CANMessage {
 
     private final List<String> messages;
     private ERROR_CATEGORY errorCategory;
 
+
+    /**
+     * Error Categories reported by the Linux CANSocket stack.  For each category, additional
+     * message meta-data may able be available in the payload fields. These additional details
+     * are decoded into message strings.
+     */
+    public static enum ERROR_CATEGORY {
+        TX_Timeout(0x1, "TX timeout (by netdevice driver)"),
+        Lost_Arbitration(0x2,"Lost Arbitration"),
+        Controller_Fault(0x4, "Controller Fault"),
+        Protocol_Violation(0x8, "Protocol Violations"),
+        Transceiver_Fault(0x10, "Transceiver Fault"),
+        No_ACK_On_Transmit(0x20, "No ACK on Transmit"),
+        Bus_Off(0x40, "Bus off"),
+        Bus_Error(0x80, "Bus error (may flood)"),
+        Bus_Restart(0x100, "Controller restarted");
+
+        private final short mask;
+        private final String description;
+
+        private ERROR_CATEGORY(int m, String d) {
+            mask= (short)m;
+            description=d;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        @Override
+        public String toString() {
+            return "ERROR_CATEGORY{" +
+                    "description='" + description + '\'' +
+                    '}';
+        }
+    }
+
     public CANErrorMessage(String gatewayId, String interfaceId, CANId id, byte[] payload, long kernelTimeStamp) {
         super(gatewayId, interfaceId, id, payload, kernelTimeStamp);
-        messages = Collections.unmodifiableList(decode());
 
+        for (ERROR_CATEGORY e : ERROR_CATEGORY.values()) {
+            if (e.mask == id.getBits()) {
+                errorCategory = e;
+                break;
+            }
+        }
+        if (errorCategory == null) {
+            throw new IllegalArgumentException("XXX TODO ");
+        }
+        // decode the details of error category and attach to this instance.
+        messages = Collections.unmodifiableList(decode());
     }
 
     public ERROR_CATEGORY getErrorCategory() {
@@ -39,40 +86,7 @@ public class CANErrorMessage extends CANMessage {
     }
 
 
-    /**
-     * Error Categories reported by the Linux CANSocket stack.  For each category, additional
-     * message meta-data may able be available in the payload fields.
-     */
-    public static enum ERROR_CATEGORY {
-        TX_Timeout(0x1, "TX timeout (by netdevice driver)"),
-        Lost_Arbitration(0x2,"Lost Arbitration"), // bit location in data[0]
-        Controller_Fault(0x4, "Controller Fault"),//
-        Protocol_Violation(0x8, "Protocol Violations"),
-        Transceiver_Fault(0x10, "Transceiver Fault"),
-        No_ACK_On_Transmit(0x20, "No ACK on Transmit"),
-        Bus_Off(0x40, "Bus off"),
-        Bus_Error(0x80, "Bus error - may flood"),
-        Bus_Restart(0x100, "Controller restarted");
 
-        final short mask;
-        final String description;
-
-        private ERROR_CATEGORY(int m, String d) {
-            mask= (short)m;
-            description=d;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        @Override
-        public String toString() {
-            return "ERROR_CATEGORY{" +
-                    "description='" + description + '\'' +
-                    '}';
-        }
-    }
 
     /**
      * Provides a decode of SocketCAN mystery bits into human readable messages.

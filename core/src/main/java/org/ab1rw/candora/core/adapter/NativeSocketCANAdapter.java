@@ -6,6 +6,8 @@ import org.ab1rw.candora.core.payloads.CANMessage;
 /**
  * Java Native (JNI) Proxy class.  This class is used by the Java Stub compiler (javah) to build
  * the C++ prototypes required for us to implement a native Linux SocketCAN adapter for the JVM.
+ *
+ * @see https://www.kernel.org/doc/Documentation/networking/can.txt
  */
 class NativeSocketCANAdapter {
 
@@ -20,8 +22,8 @@ class NativeSocketCANAdapter {
      */
     public native void close();
 
-    public native void send(CANMessage message) throws CANException;
-    public native CANMessage receive() throws CANException;
-    public native CANMessage poll() throws CANException;
+    public native void send(NativeCANFrame message) throws CANException;
+    public native NativeCANFrame receive() throws CANException;
+    public native NativeCANFrame poll() throws CANException;
 
 }
