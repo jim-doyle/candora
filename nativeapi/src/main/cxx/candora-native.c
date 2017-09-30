@@ -9,8 +9,7 @@
 #include <linux/can/raw.h>
 #include <linux/sockios.h>
 
-// https://www3.ntu.edu.sg/home/ehchua/programming/java/JavaNativeInterfa
-ce.html
+// https://www3.ntu.edu.sg/home/ehchua/programming/java/JavaNativeInterface.html
 
 
 // Proof of concept!
@@ -47,8 +46,7 @@ int main(int argc, char ** argv) {
     recv_timeout.tv_sec=recv_to_seconds;
     recv_timeout.tv_usec = recv_to_microseconds;   // just under 1 second
 ;
-    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char *)&recv_timeou
-t,
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char *)&recv_timeout,
                  sizeof(struct timeval)) <0 ) {
       int e = errno;
       printf("receive timeout failed. %d %s \n", e, strerror(e));

@@ -3,12 +3,11 @@
 JAVA_HOME=/usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
 CFLAGS=-I$(JAVA_HOME)/include
 
-a.out:  stuff.o
-        gcc -static candora-native.o -o a.out
+a.out:  candora-native.o
+	gcc -static candora-native.o -o a.out
 
-stuff.o: stuff.c
-        $(CC) $(CFLAGS) -g -c candora-native.c
-
+candora-native.o: candora-native.c
+	$(CC) $(CFLAGS) -g -c candora-native.c
 
 clean:
-        rm *.o a.out
+	rm *.o a.out
