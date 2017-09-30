@@ -1,5 +1,6 @@
 package org.ab1rw.candora.core.adapter;
 
+import org.ab1rw.candora.core.CANAdapterException;
 import org.ab1rw.candora.core.CANException;
 import org.ab1rw.candora.core.payloads.CANMessage;
 
@@ -15,15 +16,15 @@ class NativeSocketCANAdapter {
     /**
      * Initialize the JNI adapter, before any other methods are called.
      */
-    public native void init();
+    public native void init() throws CANAdapterException;
 
     /**
      * Closes the JNI adapter and releases any resources.
      */
-    public native void close();
+    public native void close() throws CANAdapterException;
 
-    public native void send(NativeCANFrame message) throws CANException;
-    public native NativeCANFrame receive() throws CANException;
-    public native NativeCANFrame poll() throws CANException;
+    public native void send(NativeCANFrame message) throws CANAdapterException;
+    public native NativeCANFrame receive() throws CANAdapterException;
+    public native NativeCANFrame poll() throws CANAdapterException;
 
 }

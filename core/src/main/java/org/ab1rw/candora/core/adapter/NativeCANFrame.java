@@ -1,6 +1,15 @@
 package org.ab1rw.candora.core.adapter;
 
-public class NativeCANFrame {
+import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CAN2Message;
+import org.ab1rw.candora.core.payloads.CANFDMessage;
+
+import java.util.Arrays;
+
+/**
+ * Package-scoped to discourage exposure of this class beyond the implementation of an Adapter.
+ */
+class NativeCANFrame {
 
     /*
     struct can_frame {
@@ -22,11 +31,24 @@ public class NativeCANFrame {
     };
     */
 
+    NativeCANFrame(CAN2Message m) {
+    }
+    NativeCANFrame(CANFDMessage m) {
+        can_id = m.getId().getBits() & 0x80000000;
+        can_dlc = (byte) m.getPayloadLength();
+        can_data = m.getPayload();
+        can_fd_flags = 0;
+    }
 
     int  can_id;
     byte can_dlc;
     byte can_fd_flags;
     byte reserved0, reserved1;
     byte[] can_data;
+
+    /** If true, Extended Frame */
+    boolean effFlag;
+    boolean errFlag;
+
 
 }

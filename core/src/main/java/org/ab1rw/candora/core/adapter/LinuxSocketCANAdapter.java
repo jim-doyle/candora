@@ -18,8 +18,6 @@ import java.util.logging.Logger;
 public class LinuxSocketCANAdapter {
 
     private static final Logger log = LogManager.getLogManager().getLogger(LinuxSocketCANAdapter.class.getName());
-
-    public enum speed { S250Kpbs, S500Kbps, s1000Kbps };
     private String gatewayId;
 
     public void init() throws CANException {
@@ -30,17 +28,39 @@ public class LinuxSocketCANAdapter {
     }
 
     /**
+     * Set the socket receive timeout for the native adapter. When a non-zero timeout
+     * is active, the receive() method will throw CANReceiveTimeoutException upon expiration
+     * of the timeout within the kernel.
+     *
+     * Sets the receive timeout
+     * @param timeout timeout in seconds, precision to microseconds is honoured.
+     */
+    public void setReceiveTimeout(double timeout) {
+        if (timeout < 0.0) {
+
+        }
+        double frac = timeout % 1;
+        int intpart = (int)(timeout - frac);
+        int microseconds = (int)(frac * 1E+6);
+        assert microseconds <= 999999;
+        // todo - tell the native member that our timeout is active.
+    }
+
+
+    /**
      * Blocking send
      * @param message
      * @throws CANException
      */
     public void send(CANMessage message) throws CANException {
+        // call the native adapter...
         throw new CANException("XXX TODO Implement me.");
     }
 
     /**
      * Blocking receive, possibly receiving a CANErrorMessage or a normal payload.
      * @return
+     * @throws
      * @throws CANException
      */
     public CANMessage receive() throws CANException {
