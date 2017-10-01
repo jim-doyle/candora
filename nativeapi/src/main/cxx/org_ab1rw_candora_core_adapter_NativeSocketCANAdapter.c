@@ -1,6 +1,9 @@
 /*
  *
  * Copyright
+ * https://www.ibm.com/developerworks/library/j-jni/index.html#notc
+ * https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
+
  */
 #include "org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h"
 #include <jni.h>
@@ -17,30 +20,24 @@
 #include <linux/sockios.h>
 #include "logging.h"
 
-/*
- * Throw a Java CANAdapterException from here back to the JVM
- */
+#define log_msg_bufsz 128
+static jobject logger;
+
+/* Throw a Java CANAdapterException from here back to the JVM */
 void throwCANAdapterException(JNIEnv * env, char * reason, int errcode) {
-  char * exBuffer;
-  sprintf(exBuffer, "%s %d %s", reason, errcode, strerror(errcode));
-
-  (*env)->ThrowNew(env,
-		  (*env)->FindClass(env, "org/ab1rw/candora/core/CANAdapterException"),
-		  exBuffer);
-  
+  char * arg1 = calloc(log_msg_bufsz);
+  snprintf(arg1,  _exc_message_sz, "%s %d %s", reason, errcode, strerror(errcode));
+  jclass exception =  (*env)->FindClass(env, "org/ab1rw/candora/core/CANAdapterException");
+  (*env)->ThrowNew(env, exception, arg1);
 }
 
+/* Throw a Java CANReceiveTimeoutException */
 void throwCANReceiveTimeoutException(JNIEnv * env) {
-  char * exBuffer;
-  sprintf(exBuffer, "%d", 1);
-
-  (*env)->ThrowNew(env,
-		  (*env)->FindClass(env, "org/ab1rw/candora/core/CANReceiveTimeoutException"),
-		  exBuffer);
-
+  char * arg1 = calloc(log_msg_bufsz);
+  snprintf(arg1, log_msg_bufsz, "%s", "socket timeout while waiting on recvfrom()");
+  jclass exception = (*env)->FindClass(env, "org/ab1rw/candora/core/CANReceiveTimeoutException");
+  (*env)->ThrowNew(env,exception,arg1);
 }
-
-
 
 JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
 (JNIEnv * env, jobject object) {
@@ -52,6 +49,8 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 (JNIEnv * env, jobject object) {
 
   init_logging(env);
+  LOG_INFO(env, logger, "Initialized!");
+  return;
 
   // are we already initialized, if so log warn and return gracefully.
   

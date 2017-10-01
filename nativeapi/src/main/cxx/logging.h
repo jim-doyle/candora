@@ -9,6 +9,7 @@ typedef enum {
   SEVERE = 0,
   WARNING,
   INFO,
+  CONFIG,
   FINE,
   FINER,
   FINEST
@@ -22,6 +23,7 @@ static jmethodID log_method_table[6];
 #define LOG_SEVERE(env, logger, msg) JU_LOG(env, logger, SEVERE, msg)
 #define LOG_WARNING(env, logger, msg) JU_LOG(env, logger, WARNING, msg)
 #define LOG_INFO(env, logger, msg) JU_LOG(env, logger, INFO, msg)
+#define LOG_CONFIG(env, logger, msg) JU_LOG(env, logger, INFO, msg)
 
 #ifdef DEBUG
 
@@ -37,15 +39,17 @@ static jmethodID log_method_table[6];
 
 #endif
 
-static void init_logging(JNIEnv *env)
+/* configures the logger method dispatch table */
+static void init_logging(JNIEnv *env, jobject logger)
 {
-  jclass logger_class = (*env)->FindClass(env, "java/util/logging/Logger");
-  log_method_table[SEVERE] = (*env)->GetMethodID(env, logger_class, "severe", "(Ljava/lang/String;)V");
-  log_method_table[WARNING] = (*env)->GetMethodID(env, logger_class, "warning", "(Ljava/lang/String;)V");
-  log_method_table[INFO] = (*env)->GetMethodID(env, logger_class, "info", "(Ljava/lang/String;)V");
-  log_method_table[FINE] = (*env)->GetMethodID(env, logger_class, "fine", "(Ljava/lang/String;)V");
-  log_method_table[FINER] = (*env)->GetMethodID(env, logger_class, "finer", "(Ljava/lang/String;)V");
-  log_method_table[FINEST] = (*env)->GetMethodID(env, logger_class, "finest", "(Ljava/lang/String;)V");
+ // jclass logger_class = (*env)->FindClass(env, "java/util/logging/Logger");
+  log_method_table[SEVERE] = (*env)->GetMethodID(env, logger, "severe", "(Ljava/lang/String;)V");
+  log_method_table[WARNING] = (*env)->GetMethodID(env, logger, "warning", "(Ljava/lang/String;)V");
+  log_method_table[INFO] = (*env)->GetMethodID(env, logger, "info", "(Ljava/lang/String;)V");
+  log_method_table[CONFIG] = (*env)->GetMethodID(env, logger, "config", "(Ljava/lang/String;)V");
+  log_method_table[FINE] = (*env)->GetMethodID(env, logger, "fine", "(Ljava/lang/String;)V");
+  log_method_table[FINER] = (*env)->GetMethodID(env, logger, "finer", "(Ljava/lang/String;)V");
+  log_method_table[FINEST] = (*env)->GetMethodID(env, logger, "finest", "(Ljava/lang/String;)V");
 }
 
 #endif
