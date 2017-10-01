@@ -44,7 +44,7 @@ int main(int argc, char ** argv) {
   can_err_mask_t err_mask = CAN_ERR_MASK;
   if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
 		 &err_mask, sizeof(can_err_mask_t)) < 0) {
-    log but continue.... 
+    //    log but continue.... 
   }
   printf("startup: set socket opt CAN_RAW_ERR_FILTER\n");
   
