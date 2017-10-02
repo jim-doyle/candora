@@ -10,6 +10,10 @@ public class CANAdapterException extends CANException {
     private int errno;  // unix errno reported
     private String nativeAdapterDebugInformation;   // file, linenumber.
 
+    public CANAdapterException(String arg) {
+        super(arg);
+    }
+
     public CANAdapterException() {
         super("JNI layer fault.");
     }

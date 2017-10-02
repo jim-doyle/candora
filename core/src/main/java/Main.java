@@ -11,9 +11,12 @@ public class Main {
 
         Logger logger = Logger.getLogger("Main");
         logger.info("started java logger.");
-        NativeSocketCANAdapter nativeSocketCANAdapter = new NativeSocketCANAdapter(true, 0.0);
-
+	
         try {
+	    System.loadLibrary("candora-native");
+
+  NativeSocketCANAdapter nativeSocketCANAdapter = new NativeSocketCANAdapter(true, 0.0);
+
             nativeSocketCANAdapter.init();
             logger.info("finished init() method");
             System.out.println("Done with init method.");

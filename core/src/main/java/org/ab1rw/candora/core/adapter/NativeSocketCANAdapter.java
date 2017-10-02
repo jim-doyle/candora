@@ -18,8 +18,10 @@ public class NativeSocketCANAdapter {
 
     private final boolean recvErrorFrames;
     private final int recvTimeoutSeconds;
-    private final int recvTimeoutMilliseconds;
-    private static final Logger nativeLogger = LogManager.getLogManager().getLogger(NativeSocketCANAdapter.class.getName());
+    private final int recvTimeoutMicroseconds;
+    private final static Logger nativeLogger = Logger.getLogger("Foo");
+ 
+    private static Long testing = new Long(1);
     private int socket;
 
     private long lastReceivedTimestamp;
@@ -29,6 +31,7 @@ public class NativeSocketCANAdapter {
 
     public NativeSocketCANAdapter(boolean exposeErrorFrames, double recvTimeout) {
 
+	nativeLogger.info("kickstart");
         recvErrorFrames = exposeErrorFrames;
         if (recvTimeout < 0.0) {
             throw new IllegalArgumentException("Ctor: Receive timeout argument must be zero or a positive number in seconds.");
@@ -36,8 +39,8 @@ public class NativeSocketCANAdapter {
         // convert to seconds and microseconds for struct timeval in C api
         double frac = recvTimeout % 1;
         recvTimeoutSeconds = (int)(recvTimeout - frac);
-        recvTimeoutMilliseconds = (int)(frac * 1E+6);
-        assert recvTimeoutMilliseconds <= 999999;
+        recvTimeoutMicroseconds = (int)(frac * 1E+6);
+        assert recvTimeoutMicroseconds <= 999999;
     }
 
     /**

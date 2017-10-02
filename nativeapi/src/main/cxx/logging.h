@@ -15,7 +15,7 @@ typedef enum {
   FINEST
 } log_level_t;
 
-static jmethodID log_method_table[6];
+static jmethodID log_method_table[7];
 
 #define JU_LOG(env, logger, level, msg) \
   (*env)->CallVoidMethod(env, logger, log_method_table[level], (*env)->NewStringUTF(env, msg))
@@ -23,7 +23,7 @@ static jmethodID log_method_table[6];
 #define LOG_SEVERE(env, logger, msg) JU_LOG(env, logger, SEVERE, msg)
 #define LOG_WARNING(env, logger, msg) JU_LOG(env, logger, WARNING, msg)
 #define LOG_INFO(env, logger, msg) JU_LOG(env, logger, INFO, msg)
-#define LOG_CONFIG(env, logger, msg) JU_LOG(env, logger, INFO, msg)
+#define LOG_CONFIG(env, logger, msg) JU_LOG(env, logger, CONFIG, msg)
 
 #ifdef DEBUG
 
@@ -41,8 +41,7 @@ static jmethodID log_method_table[6];
 
 /* configures the logger method dispatch table */
 static void init_logging(JNIEnv *env, jobject logger)
-{
- // jclass logger_class = (*env)->FindClass(env, "java/util/logging/Logger");
+{  
   log_method_table[SEVERE] = (*env)->GetMethodID(env, logger, "severe", "(Ljava/lang/String;)V");
   log_method_table[WARNING] = (*env)->GetMethodID(env, logger, "warning", "(Ljava/lang/String;)V");
   log_method_table[INFO] = (*env)->GetMethodID(env, logger, "info", "(Ljava/lang/String;)V");

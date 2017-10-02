@@ -49,6 +49,7 @@ class NativeCANFrame {
     /** If true, Extended Frame */
     boolean effFlag;
     boolean errFlag;
+    int timestamp;
 
 
 }

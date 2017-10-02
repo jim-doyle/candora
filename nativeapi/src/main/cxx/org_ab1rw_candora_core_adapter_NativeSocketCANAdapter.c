@@ -1,17 +1,20 @@
 /*
  *
- * Copyright
+ * Copyright 2017 James R. Doyle, AB1RW
+ * 
+ * Reading Recommendations:
  * https://www.ibm.com/developerworks/library/j-jni/index.html#notc
  * https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
-
  */
 #include "org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h"
 #include <jni.h>
 #include <jni_md.h>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -21,82 +24,263 @@
 #include "logging.h"
 
 #define log_msg_bufsz 128
-static jobject logger;
+//static jobject logger;
+
+static bool atMostOnceInit = false;
+
+// cache JNI classes, fieldID, and method IDs after init() to avoid expensive "reach backs" into JVM
+// The cached times are global to the adapter implementation
+static struct {
+  jclass clsNativeSocketCANAdapter;
+  jclass clsCANAdapterException;
+  jclass clsCANReceiveTimeoutException;
+  jclass clsCANNativeFrame;
+} jniClassCache;
+
+static struct {
+  jfieldID fldSocket;
+  jfieldID fldReadyFlag;
+} jniNativeAdapterCache;
+  
+static struct {
+  jfieldID can_id;
+  jfieldID can_dlc;
+  jfieldID can_fd_flags;
+  jfieldID reserved0, reserved1;
+  jfieldID can_data;
+  jfieldID effFlag, errFlag;
+  jfieldID timestamp;
+  
+} jniNativeFrameCache;
 
 /* Throw a Java CANAdapterException from here back to the JVM */
 void throwCANAdapterException(JNIEnv * env, char * reason, int errcode) {
-  char * arg1 = calloc(log_msg_bufsz);
-  snprintf(arg1,  _exc_message_sz, "%s %d %s", reason, errcode, strerror(errcode));
+  char * arg1 = calloc(log_msg_bufsz, sizeof(char));
+  snprintf(arg1,  log_msg_bufsz, "%s %d %s", reason, errcode, strerror(errcode));
   jclass exception =  (*env)->FindClass(env, "org/ab1rw/candora/core/CANAdapterException");
+  assert (exception != NULL);
   (*env)->ThrowNew(env, exception, arg1);
 }
 
+
 /* Throw a Java CANReceiveTimeoutException */
 void throwCANReceiveTimeoutException(JNIEnv * env) {
-  char * arg1 = calloc(log_msg_bufsz);
+  char * arg1 = calloc(log_msg_bufsz, sizeof(char));
   snprintf(arg1, log_msg_bufsz, "%s", "socket timeout while waiting on recvfrom()");
   jclass exception = (*env)->FindClass(env, "org/ab1rw/candora/core/CANReceiveTimeoutException");
   (*env)->ThrowNew(env,exception,arg1);
 }
 
+/* Implements Java Native Method */
 JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
 (JNIEnv * env, jobject object) {
   return  NULL;
 }
 
 
+/* Implements Java Native Method */
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_init
 (JNIEnv * env, jobject object) {
 
-  init_logging(env);
-  LOG_INFO(env, logger, "Initialized!");
-  return;
+  jclass cls = (*env)->GetObjectClass(env, object);
+ 
+  // first time through, capture and cache all the JNI metadata in the static struct....
+  if (! atMostOnceInit) {
+    jniClassCache.clsCANNativeFrame =  (*env)->FindClass(env,
+						 "org/ab1rw/candora/core/adapter/NativeCANFrame");
+    jniClassCache.clsCANReceiveTimeoutException = (*env)->FindClass(env,
+						 "org/ab1rw/candora/core/CANReceiveTimeoutException");
+    jniClassCache.clsCANAdapterException = (*env)->FindClass(env,
+						 "org/ab1rw/candora/core/CANAdapterException");
 
-  // are we already initialized, if so log warn and return gracefully.
+    
+    jniClassCache.clsNativeSocketCANAdapter = cls;
+    jniNativeAdapterCache.fldReadyFlag = (*env)->GetFieldID(env,cls,"adapterReady","Z");
+    jniNativeAdapterCache.fldSocket = (*env)->GetFieldID(env,cls,"socket","I");
+
+    
+    jclass nf = jniClassCache.clsCANNativeFrame;
+    jniNativeFrameCache.can_id = (*env)->GetFieldID(env,nf,"can_id","I");
+    jniNativeFrameCache.can_dlc = (*env)->GetFieldID(env,nf,"can_dlc","B");
+    jniNativeFrameCache.can_fd_flags = (*env)->GetFieldID(env,nf,"can_fd_flags","B");
+    jniNativeFrameCache.can_data = (*env)->GetFieldID(env,nf,"can_data","[B");
+    jniNativeFrameCache.effFlag = (*env)->GetFieldID(env,nf,"effFlag","Z");
+    jniNativeFrameCache.errFlag = (*env)->GetFieldID(env,nf,"errFlag","Z");
+    jniNativeFrameCache.timestamp = (*env)->GetFieldID(env,nf,"timestamp","I");
+    
+    atMostOnceInit = true;
+  }
+
+  //jboolean initFlag = (*env)->GetBooleanField(env,object, jniCache.fldReadyFlag);
+  //printf("%s",initFlag);
   
+  
+  //jclass cls = (*env)->GetObjectClass(env, object);
+  //jfieldID fidNumber = (*env)->GetStaticFieldID(env,cls, "nativeLogger", "Ljava/util/logging/Logger;");
+  //assert(fidNumber != NULL);
+  //
+  //jclass p = (*env)->FindClass(env, "java/util/logging/Logger");
+  //assert (p != NULL);
+  //jmethodID mx = (*env)->GetMethodID(env, p, "info", "(Ljava/lang/String;)V");
+  //assert (mx != NULL);
+  //  (*env)->CallVoidMethod(env, logger, mx, (*env)->NewStringUTF(env, "Hey!"));
+  //
+  //jobject loggerField = (*env)->GetStaticObjectField(env,
+  //						     cls,						    // fidNumber);    
+  //assert (loggerField != NULL);
+  //jmethodID m = (*env)->GetMethodID(env, loggerField, "info",
+  //				    "(Ljava/lang/String)V");
+  //assert(m!=NULL);
+  //(*env)->CallVoidMethod(env, logger, m, (*env)->NewStringUTF(env, "Hi!"));
+  //LOG_INFO(env, logger, "Initialized!");
+  //
+  // are we already initialized, if so log warn and return gracefully.
+
+  if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == true) {
+    // already initialized, just return....
+    return;
+  }
+
   const int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
   if (s < 0) {
     throwCANAdapterException(env, "socket()", errno);
   }
-
-  // enable CAN FD frames 
+    
+   // enable support for CAN 2.0x and CAN FD frames 
    int enable = 1;
    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
 		  &enable, sizeof(enable)) < 0) {
+     close(s);
      throwCANAdapterException(env, "setsockopt(CAN_RAW_FD_FRAMES)", errno);
    }
 
-  // take all errors
+  // enable receive of all error frames 
   can_err_mask_t err_mask = CAN_ERR_MASK;
   if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
                  &err_mask, sizeof(can_err_mask_t)) < 0) {
-    //    log but continue....
+    close(s);
+    throwCANAdapterException(env, "setsockopt(CAN_RAW_ERR_FRAMES)", errno);
   }
-  printf("startup: set socket opt CAN_RAW_ERR_FILTER\n");
+
+  // setup the receive/poll timeout, so long as there is a non-zero value present.
+  jfieldID f_to_s = (*env)->GetFieldID(env,cls,"recvTimeoutSeconds","I");
+  jfieldID f_to_us = (*env)->GetFieldID(env,cls,"recvTimeoutMicroseconds","I");
+  assert (f_to_us != NULL && f_to_us != NULL);
+  jint to_s = (*env)->GetIntField(env,object, f_to_s);
+  jint to_us = (*env)->GetIntField(env,object, f_to_us);
+  if (to_s > 0 || to_us > 0) {
+    struct timeval recv_timeout;
+    recv_timeout.tv_sec=to_s;
+    recv_timeout.tv_usec=to_us;
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char *)&recv_timeout,
+                 sizeof(struct timeval)) <0 ) {
+      close(s);
+      throwCANAdapterException(env, "setsockopt(SO_RCVTIMEO)", errno);\
+    }
+
+  }
+
+  // Interface bind
+  struct ifreq ifr;
+  strcpy(ifr.ifr_name, "can0" );
+  if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+    close(s);
+     throwCANAdapterException(env, "ioctl(SIOCGIFINDEX)", errno);    
+  }
   
-  // create the socket
-  // set various sock opts
-  // store the socket fd on the java class instance
-  // mark the ready bit
-  // LOG_INFO
+  struct sockaddr_can addr;
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = ifr.ifr_ifindex;
+  if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    close(s);
+    throwCANAdapterException(env, "bind()", errno);    
+  }
+
+  (*env)->SetIntField(env, object, jniNativeAdapterCache.fldSocket, s);
+  (*env)->SetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag, true);
 }
 
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_close
 (JNIEnv * env, jobject object) {
-  // unflip the ready bit, atomically
-  // close the socket
-  // LOG_INFO  
+
+  if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == false) {
+    return; // already closed
+  }
+  
+  (*env)->SetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag, false);
+  jint s = (*env)->GetIntField(env, object, jniNativeAdapterCache.fldSocket);
+  if (close(s)<0) {
+    fprintf(stderr,"Unexpected errno %d while closing socket %d : %s\n",errno,s,strerror(errno)); 
+  }
 }
 
+/* Implements Java Native Method */
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_send
-(JNIEnv * env, jobject obj, jobject arg1) {
-  // call sendto
+(JNIEnv * env, jobject object, jobject arg1) {
+
+  if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == false) {
+        throwCANAdapterException(env, "NativeAdapter not initialized or closed.", errno);    
+  }
+  
+  jint s = (*env)->GetIntField(env, object, jniNativeAdapterCache.fldSocket);
+    
+  struct canfd_frame txframe;
+  txframe.can_id = (*env)->GetIntField(env, arg1, jniNativeFrameCache.can_id);
+  txframe.len = (*env)->GetByteField(env, arg1, jniNativeFrameCache.can_dlc);
+  txframe.flags = (*env)->GetByteField(env, arg1, jniNativeFrameCache.can_fd_flags);
+  //txframe.data = (*env)->GetByteArrayElements(env, arg1, jniNativeFrameCache.can_data);
+  
+
+  struct sockaddr_can addr;   // XXX - need to use the same sockaddr from bind?
+  if (sendto(s, &txframe, sizeof(struct can_frame),
+	     0, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+
+    throwCANAdapterException(env, "sendto()", errno);    
+  }
+  
+ 
   // LOG_FINE before and after
   // update counters
 }
 
+/* Implements Java Native Method */
 JNIEXPORT jobject JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
 (JNIEnv * env, jobject object) {
+
+  if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == false) {
+        throwCANAdapterException(env, "NativeAdapter not initialized or closed.", errno);    
+  }
+
+  jint s = (*env)->GetIntField(env, object, jniNativeAdapterCache.fldSocket);
+
+  struct canfd_frame rxframe;
+  bzero(&rxframe.data, 8);
+
+  struct sockaddr_can addr;   // XXX - need to use the same sockaddr from bind?
+  socklen_t len = sizeof(addr);
+  int nbytes = recvfrom(s, &rxframe, sizeof(struct canfd_frame),
+                    0, (struct sockaddr*)&addr, &len);
+  if (nbytes < 0) {
+    int e = errno;
+    if (e == EAGAIN) {
+      throwCANReceiveTimeoutException(env);
+    }
+    throwCANAdapterException(env, "recvfrom()", errno);
+    assert(false);
+  } else {
+    // We've successfully received a packet ; extract the recv timestamp
+    struct timeval recv_timestamp;
+    ioctl(s, SIOCGSTAMP, &recv_timestamp);
+    // Now, unpack the message.
+    
+    
+    rxframe.can_id;
+    rxframe.len;
+    rxframe.flags;
+    
+    
+  }
+   
   // block on recvfrom, LOG_FINE before and after
   // unpack the packet, is it an error or a payload? is it can2 or canfd?
   // update counters
