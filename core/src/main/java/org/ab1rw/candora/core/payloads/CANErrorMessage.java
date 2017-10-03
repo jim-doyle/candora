@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * An Error Message from the Linux SocketCAN facility.
  *
- * @see /usr/include/linux/can/error.h Many of the bitmasks and code values, as well as the
+ * see file:/usr/include/linux/can/error.h'  Many of the bitmasks and code values, as well as the
  * encoding convention in the payload field are covered in this C header file.
  *
  */
@@ -15,7 +15,7 @@ public class CANErrorMessage extends CANMessage {
 
     private final List<String> messages;
     private ERROR_CATEGORY errorCategory;
-
+    protected final byte [] payload;
 
     /**
      * Error Categories reported by the Linux CANSocket stack.  For each category, additional
@@ -53,8 +53,9 @@ public class CANErrorMessage extends CANMessage {
         }
     }
 
-    public CANErrorMessage(String gatewayId, String interfaceId, CANId id, byte[] payload, long kernelTimeStamp) {
-        super(gatewayId, interfaceId, id, payload, kernelTimeStamp);
+    public CANErrorMessage(String gatewayId, String interfaceId, CANId id, byte[] _payload, long kernelTimeStamp) {
+        super(gatewayId, interfaceId, kernelTimeStamp);
+        payload=_payload;
 
         for (ERROR_CATEGORY e : ERROR_CATEGORY.values()) {
             if (e.mask == id.getBits()) {

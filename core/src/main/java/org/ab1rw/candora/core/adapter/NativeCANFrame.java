@@ -5,22 +5,13 @@ import org.ab1rw.candora.core.payloads.CAN2Message;
 import org.ab1rw.candora.core.payloads.CANFDMessage;
 
 import java.util.Arrays;
-
 /**
+ * Copyright Header
  * Package-scoped to discourage exposure of this class beyond the implementation of an Adapter.
  */
 class NativeCANFrame {
 
     /*
-    struct can_frame {
-            canid_t can_id;  // 32 bit CAN_ID + EFF/RTR/ERR flags
-            __u8    can_dlc;         // frame payload length in byte (0 .. 8)
-            __u8    __pad;   // padding
-            __u8    __res0;  //reserved / padding
-            __u8    __res1;  //reserved / padding
-            __u8    data[8] __attribute__((aligned(8)));
-    };
-
     struct canfd_frame {
             canid_t can_id;  // 32 bit CAN_ID + EFF/RTR/ERR flags
             __u8    len;     // frame payload length in byte (0 .. 64)
@@ -31,8 +22,18 @@ class NativeCANFrame {
     };
     */
 
+    NativeCANFrame() {}
+    /**
+     * ctor: build a raw frame for transmission from a CAN 2.0 compliant message payload
+     * @param m value object
+     */
     NativeCANFrame(CAN2Message m) {
     }
+
+    /**
+     * ctor build a raw frame for transmission from a CAN FD compliant message payload
+     * @param m value object
+     */
     NativeCANFrame(CANFDMessage m) {
         can_id = m.getId().getBits() & 0x80000000;
         can_dlc = (byte) m.getPayloadLength();
@@ -40,16 +41,21 @@ class NativeCANFrame {
         can_fd_flags = 0;
     }
 
-    int  can_id;
-    byte can_dlc;
-    byte can_fd_flags;
-    byte reserved0, reserved1;
-    byte[] can_data;
+    /*
+     * Note that all attribute names, and types, are coupled to C code in the nativeapi maven module of
+     * this project. If you change signature here, you must reflect the same changes in the C code, and
+     * vice versa.
+     */
+    protected int  can_id;
+    protected byte can_dlc;
+    protected byte can_fd_flags;
+    protected byte reserved0, reserved1;
+    protected byte[] can_data;
 
     /** If true, Extended Frame */
-    boolean effFlag;
-    boolean errFlag;
-    int timestamp;
+    protected boolean effFlag;
+    protected boolean errFlag;
+    protected int timestamp;
 
 
 }
