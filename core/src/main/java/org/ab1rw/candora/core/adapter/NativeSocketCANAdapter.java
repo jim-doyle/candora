@@ -54,6 +54,6 @@ public class NativeSocketCANAdapter {
     public final native synchronized void init() throws CANAdapterException;
     public final native synchronized void close() throws CANAdapterException;
     public final native synchronized void send(NativeCANFrame message) throws CANAdapterException;
-    public final native synchronized NativeCANFrame receive() throws CANAdapterException;
+    public final native synchronized void receive(NativeCANFrame message) throws CANAdapterException;
 
 }

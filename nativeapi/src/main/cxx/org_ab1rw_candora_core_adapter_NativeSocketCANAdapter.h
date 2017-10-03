@@ -42,18 +42,10 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 /*
  * Class:     org_ab1rw_candora_core_adapter_NativeSocketCANAdapter
  * Method:    receive
- * Signature: ()Lorg/ab1rw/candora/core/adapter/NativeCANFrame;
+ * Signature: (Lorg/ab1rw/candora/core/adapter/NativeCANFrame;)V
  */
-JNIEXPORT jobject JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
-  (JNIEnv *, jobject);
-
-/*
- * Class:     org_ab1rw_candora_core_adapter_NativeSocketCANAdapter
- * Method:    poll
- * Signature: ()Lorg/ab1rw/candora/core/adapter/NativeCANFrame;
- */
-JNIEXPORT jobject JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_poll
-  (JNIEnv *, jobject);
+JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
+  (JNIEnv *, jobject, jobject);
 
 #ifdef __cplusplus
 }

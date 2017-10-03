@@ -27,4 +27,10 @@ public class CANFDMessage extends CANMessage {
     public byte[] getPayload() {
         return payload;
     }
+
+    public int getPayloadLength() {
+	return payload.length;
+	}
+
+
 }

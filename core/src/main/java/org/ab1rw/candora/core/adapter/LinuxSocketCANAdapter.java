@@ -21,12 +21,12 @@ import java.util.logging.Logger;
 public class LinuxSocketCANAdapter {
 
     private static final Logger log = LogManager.getLogManager().getLogger(LinuxSocketCANAdapter.class.getName());
-    private final NativeSocketCANAdapter nativeAdapter;
+    private NativeSocketCANAdapter nativeAdapter;
     private String gatewayId;
 
     public LinuxSocketCANAdapter() {
         System.loadLibrary("candora-native");
-        nativeAdapter = new NativeSocketCANAdapter();
+//        nativeAdapter = new NativeSocketCANAdapter();
     }
 
     @PostConstruct
@@ -77,7 +77,8 @@ public class LinuxSocketCANAdapter {
      * @throws CANException any subclass of the this root exception
      */
     public CANMessage receive() throws CANException {
-        NativeCANFrame f = nativeAdapter.receive();
+        NativeCANFrame f =  new NativeCANFrame();
+	nativeAdapter.receive(f);
         if (f.errFlag) {
 
         }

@@ -218,8 +218,8 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 }
 
 /* Implements Java Native Method */
-JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_send
-(JNIEnv * env, jobject object, jobject arg1) {
+JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_send (JNIEnv * env, jobject object, jobject arg1) {
+
 
   if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == false) {
         throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
@@ -242,8 +242,8 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 }
 
 /* Implements Java Native Method */
-JNIEXPORT jobject JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
-(JNIEnv * env, jobject object) {
+JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
+(JNIEnv * env, jobject object, jobject arg1) {
 
   if ((*env)->GetBooleanField(env,object, jniNativeAdapterCache.fldReadyFlag) == false) {
         throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
@@ -271,47 +271,16 @@ JNIEXPORT jobject JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAda
   struct timeval recv_timestamp;
   ioctl(socket, SIOCGSTAMP, &recv_timestamp);
 
-    /* bit rate switch (second bitrate for payload data) */
-    if (rxframe.flags & CANFD_BRS) {
-    }
-    /* error state indicator of the transmitting node */
-    if (rxframe.flags & CANFD_ESI) {
-    }
-    /* remote transmission request */
-    if (rxframe.can_id & CAN_RTR_FLAG) {
-    }
 
-    // Extract that station address, either 11 bit (CAN 2.0) or 29 bit (CAN 2.0x or CAN FD)
-    unsigned int32 addrbits = 0;
-    if (rxframe.can_id & CAN_EFF_FLAG) {
-        addrbits = CAN_EFF_MASK & rxframe.can_id;
-    } else {
-        addrbits = CAN_SFF_MASK & rxframe.can_id;
-    }
+  (*env)->SetIntField(env, arg1, jniNativeFrameCache.can_id, rxframe.can_id);
+  (*env)->SetByteField(env, arg1, jniNativeFrameCache.can_dlc, rxframe.len);
+  (*env)->SetByteField(env, arg1, jniNativeFrameCache.can_fd_flags, rxframe.flags);
+  // todo, set the array data.
+  // document this!
+  (*env)->SetIntField(env, arg1, jniNativeFrameCache.timestamp, recv_timestamp.tv_usec);    
 
-    // extract the error bits - which are defined in <linux/can/errors.h>
-    unsigned int32 errorbits = 0;
-    if (rxframe.can_id & CAN_ERR_FLAG) {
-        errorbits = rxframe.can_id & CAN_ERR_MASK;
-    }
+  jbyte p[CANFD_MAX_DLEN];
+  (*env)->SetByteArrayRegion(env, d, 0, CANFD_MAX_DLEN-1, p);
 
-
-
-
-    // extract the station address
-
-    
-    rxframe.can_id;
-    rxframe.len;
-    rxframe.flags;
-
-    // copy the payload
-    
-
-  // block on recvfrom, LOG_FINE before and after
-  // unpack the packet, is it an error or a payload? is it can2 or canfd?
-  // update counters
-  return NULL;
 }
-
 
