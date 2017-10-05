@@ -3,7 +3,7 @@
 
 
 JAVA_HOME=/usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
-CFLAGS=-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -g 
+CPPFLAGS=-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -g 
 
 all:    a.out libcandora-native.so
 
@@ -22,7 +22,7 @@ libcandora-native.so: org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o
 
 candora-native.o: candora-native.c
 
-org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o :  org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.c org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h logging.h
+org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o :  org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.cpp org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h logging.h
 
 clean:
 	rm -f *.o a.out *.so

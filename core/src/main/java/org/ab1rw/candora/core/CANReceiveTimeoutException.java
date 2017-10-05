@@ -6,7 +6,10 @@ package org.ab1rw.candora.core;
  */
 public class CANReceiveTimeoutException extends CANException {
 
-    public CANReceiveTimeoutException(double timeout) {
+    public CANReceiveTimeoutException() {
         super("");
+    }
+    public CANReceiveTimeoutException(String arg) {
+	super(arg);
     }
 }

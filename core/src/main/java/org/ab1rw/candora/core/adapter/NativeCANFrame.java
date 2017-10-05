@@ -9,7 +9,7 @@ import java.util.Arrays;
  * Copyright Header
  * Package-scoped to discourage exposure of this class beyond the implementation of an Adapter.
  */
-class NativeCANFrame {
+public class NativeCANFrame {
 
     /*
     struct canfd_frame {
@@ -22,7 +22,7 @@ class NativeCANFrame {
     };
     */
 
-    NativeCANFrame() {}
+    public NativeCANFrame() {}
     /**
      * ctor: build a raw frame for transmission from a CAN 2.0 compliant message payload
      * @param m value object
@@ -46,11 +46,11 @@ class NativeCANFrame {
      * this project. If you change signature here, you must reflect the same changes in the C code, and
      * vice versa.
      */
-    protected int  can_id;
-    protected byte can_dlc;
+    public int  can_id;
+    public byte can_dlc;
     protected byte can_fd_flags;
     protected byte reserved0, reserved1;
-    protected byte[] can_data;
+    public byte[] can_data = new byte[64];
 
     /** If true, Extended Frame */
     protected boolean effFlag;
