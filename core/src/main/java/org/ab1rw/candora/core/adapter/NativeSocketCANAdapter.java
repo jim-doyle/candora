@@ -1,10 +1,5 @@
 package org.ab1rw.candora.core.adapter;
-
 import org.ab1rw.candora.core.CANAdapterException;
-import org.ab1rw.candora.core.CANException;
-import org.ab1rw.candora.core.payloads.CANMessage;
-
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 /**
@@ -20,27 +15,28 @@ import java.util.logging.Logger;
  * see Linux http://www.kernel.org/doc/Documentation/networking/can.txt
  */
 // XXX to do - make the package scoped when the JNI work is finished.
-public class NativeSocketCANAdapter {
+class NativeSocketCANAdapter {
 
     private final static Logger nativeLogger = Logger.getLogger(NativeSocketCANAdapter.class.getName());
 
     // these private members are manipulated by the C native library
-    private final boolean recvErrorFrames;
-    private final int recvTimeoutSeconds;
-    private final int recvTimeoutMicroseconds;
+    private boolean recvErrorFrames = true;
+    private boolean useAllInterfaces = true;
+    private String useOnlyInterfaceId;
+
+    private int recvTimeoutSeconds = 0;
+    private int recvTimeoutMicroseconds= 0;
 
     private static Long testing = new Long(1);
     private int socket;
     private boolean adapterReady;
 
-    public NativeSocketCANAdapter(boolean exposeErrorFrames, double recvTimeout) {
-        socket = -1;
-
-	    nativeLogger.info("kickstart");
-
-        recvErrorFrames = exposeErrorFrames;
+    void setErrorFramesEnabled(boolean  arg) {
+        recvErrorFrames = arg;
+    }
+    void setRecvTimeout(double recvTimeout) {
         if (recvTimeout < 0.0) {
-            throw new IllegalArgumentException("Ctor: Receive timeout argument must be zero or a positive number in seconds.");
+            throw new IllegalArgumentException("Receive timeout argument must be zero or a positive number in seconds.");
         }
         // convert to seconds and microseconds for struct timeval in C api
         double frac = recvTimeout % 1;
@@ -50,10 +46,11 @@ public class NativeSocketCANAdapter {
     }
 
 
-    public final native String getVersionInfo();
-    public final native synchronized void init() throws CANAdapterException;
-    public final native synchronized void close() throws CANAdapterException;
-    public final native synchronized void send(NativeCANFrame message) throws CANAdapterException;
-    public final native synchronized void receive(NativeCANFrame message) throws CANAdapterException;
+
+    final native String getVersionInfo();  // XXX todo
+    final native synchronized void init() throws CANAdapterException;
+    final native synchronized void close() throws CANAdapterException;
+    final native synchronized void send(NativeCANFrame message) throws CANAdapterException;
+    final native synchronized void receive(NativeCANFrame message) throws CANAdapterException;
 
 }

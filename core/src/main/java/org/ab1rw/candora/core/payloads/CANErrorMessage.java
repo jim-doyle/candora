@@ -53,12 +53,12 @@ public class CANErrorMessage extends CANMessage {
         }
     }
 
-    public CANErrorMessage(String gatewayId, String interfaceId, CANId id, byte[] _payload, long kernelTimeStamp) {
+    public CANErrorMessage(String gatewayId, String interfaceId, int hdr, byte[] _payload, long kernelTimeStamp) {
         super(gatewayId, interfaceId, kernelTimeStamp);
         payload=_payload;
 
         for (ERROR_CATEGORY e : ERROR_CATEGORY.values()) {
-            if (e.mask == id.getBits()) {
+            if (e.mask == hdr) {
                 errorCategory = e;
                 break;
             }

@@ -1,8 +1,8 @@
 package org.ab1rw.candora.core.adapter;
 
 import org.ab1rw.candora.core.CANException;
-import org.ab1rw.candora.core.payloads.CANMessage;
-
+import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.*;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
@@ -21,12 +21,12 @@ import java.util.logging.Logger;
 public class LinuxSocketCANAdapter {
 
     private static final Logger log = LogManager.getLogManager().getLogger(LinuxSocketCANAdapter.class.getName());
-    private NativeSocketCANAdapter nativeAdapter;
+    private final NativeSocketCANAdapter nativeAdapter;
     private String gatewayId;
 
     public LinuxSocketCANAdapter() {
         System.loadLibrary("candora-native");
-//        nativeAdapter = new NativeSocketCANAdapter();
+        nativeAdapter = new NativeSocketCANAdapter();
     }
 
     @PostConstruct
@@ -50,16 +50,8 @@ public class LinuxSocketCANAdapter {
      * @param timeout timeout in seconds, i.e. 0.010 means every 100 milliseconds. Precision to microseconds is honoured.
      */
     public void setReceiveTimeout(double timeout) {
-        if (timeout < 0.0) {
-
-        }
-        double frac = timeout % 1;
-        int intpart = (int)(timeout - frac);
-        int microseconds = (int)(frac * 1E+6);
-        assert microseconds <= 999999;
-        // todo - tell the native member that our timeout is active.
+       nativeAdapter.setRecvTimeout(timeout);
     }
-
 
     /**
      * Blocking send
@@ -68,7 +60,10 @@ public class LinuxSocketCANAdapter {
      */
     public void send(CANMessage message) throws CANException {
         NativeCANFrame f = new NativeCANFrame();
+        log.fine("about to call native method to send CAN message.");
+        if (true) throw new RuntimeException("finish this functionality!");
         nativeAdapter.send(f);
+        log.fine("CAN message sent by native adapter");
     }
 
     /**
@@ -78,18 +73,27 @@ public class LinuxSocketCANAdapter {
      */
     public CANMessage receive() throws CANException {
         NativeCANFrame f =  new NativeCANFrame();
-	nativeAdapter.receive(f);
+	    log.fine("waiting to receive CAN message from native socket.");
+        nativeAdapter.receive(f);
+	    log.fine("CAN message received.");
+
         if (f.errFlag) {
-
+            // in this case, the error details are hiding in the can id bits; delegate the construction
+            // off to our dedicated error message payload
+            return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.timestamp);
         }
 
+        final CANId id;
+        // determine if we are using 11 or 29 bit bus addresses, and appropriately mask off bits
         if (f.effFlag) {
-
+            id = new CANId(f.can_id & 0x1FFFFFFF);  /* CAN_EFF_MASK */
         } else {
-
+            id = new CANId(f.can_id & 0x7FF);       /* CAN_SFF_MASK */
         }
 
-        throw new CANException("XXX TODO Implement me.");
+        // build an return a new immutable message
+        return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.timestamp);
+
     }
 
 

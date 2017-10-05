@@ -9,7 +9,7 @@ import java.util.Arrays;
  * Copyright Header
  * Package-scoped to discourage exposure of this class beyond the implementation of an Adapter.
  */
-public class NativeCANFrame {
+class NativeCANFrame {
 
     /*
     struct canfd_frame {
@@ -22,35 +22,20 @@ public class NativeCANFrame {
     };
     */
 
-    public NativeCANFrame() {}
-    /**
-     * ctor: build a raw frame for transmission from a CAN 2.0 compliant message payload
-     * @param m value object
-     */
-    NativeCANFrame(CAN2Message m) {
-    }
+    NativeCANFrame() {}
 
-    /**
-     * ctor build a raw frame for transmission from a CAN FD compliant message payload
-     * @param m value object
-     */
-    NativeCANFrame(CANFDMessage m) {
-        can_id = m.getId().getBits() & 0x80000000;
-        can_dlc = (byte) m.getPayloadLength();
-        can_data = m.getPayload();
-        can_fd_flags = 0;
-    }
 
     /*
      * Note that all attribute names, and types, are coupled to C code in the nativeapi maven module of
      * this project. If you change signature here, you must reflect the same changes in the C code, and
      * vice versa.
      */
-    public int  can_id;
-    public byte can_dlc;
+    protected String canInterface;
+    protected int  can_id;
+    protected byte can_dlc;
     protected byte can_fd_flags;
     protected byte reserved0, reserved1;
-    public byte[] can_data = new byte[64];
+    protected byte[] can_data; // = new byte[64];
 
     /** If true, Extended Frame */
     protected boolean effFlag;
