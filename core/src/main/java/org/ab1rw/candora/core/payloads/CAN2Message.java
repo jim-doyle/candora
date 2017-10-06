@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 /**
  * A CAN 2.0 Message Payload
+ * @see CANFDMessage
  */
 public class CAN2Message extends CANMessage implements Serializable {
 
@@ -13,17 +14,23 @@ public class CAN2Message extends CANMessage implements Serializable {
 
     public CAN2Message(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload, long _kernelTimeStamp) {
         super(_gatewayId, _interfaceId, _kernelTimeStamp);
+        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         id=_id;
         payload = _payload;
-
-        if (payload.length > 8) {
-            throw new IllegalArgumentException("Invalid Message. CAN 2.0 Message Payloads are limited to 32 bits ; value given to constructor is "+_payload.length*8+" bits. ");
-        }
+        checkPayloadLength();
     }
 
     public CAN2Message(CANId _id, byte[] _payload) {
         super(null, null, -1);
+        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         id=_id; payload=_payload;
+        checkPayloadLength();
+    }
+
+    private void checkPayloadLength() {
+        if (payload.length > 8) {
+            throw new IllegalArgumentException("Invalid payload size. CAN 2.0 Messages are limited to lengths < 8 bytes : "+payload.length);
+        }
     }
 
     public CANId getId() {
@@ -31,7 +38,8 @@ public class CAN2Message extends CANMessage implements Serializable {
     }
 
     public byte[] getPayload() {
-        return payload;
+        // protect immutability of the message, returns a copy
+        return Arrays.copyOf(payload, payload.length);
     }
 
     @Override

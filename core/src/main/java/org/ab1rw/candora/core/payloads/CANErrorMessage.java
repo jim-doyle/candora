@@ -53,8 +53,18 @@ public class CANErrorMessage extends CANMessage {
         }
     }
 
+    /**
+     *
+     * @param gatewayId
+     * @param interfaceId
+     * @param hdr
+     * @param _payload
+     * @param kernelTimeStamp
+     */
     public CANErrorMessage(String gatewayId, String interfaceId, int hdr, byte[] _payload, long kernelTimeStamp) {
         super(gatewayId, interfaceId, kernelTimeStamp);
+        if (_payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
+
         payload=_payload;
 
         for (ERROR_CATEGORY e : ERROR_CATEGORY.values()) {

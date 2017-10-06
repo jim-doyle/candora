@@ -14,7 +14,6 @@ import java.util.logging.Logger;
  *
  * see Linux http://www.kernel.org/doc/Documentation/networking/can.txt
  */
-// XXX to do - make the package scoped when the JNI work is finished.
 class NativeSocketCANAdapter {
 
     private final static Logger nativeLogger = Logger.getLogger(NativeSocketCANAdapter.class.getName());
@@ -34,6 +33,7 @@ class NativeSocketCANAdapter {
     void setErrorFramesEnabled(boolean  arg) {
         recvErrorFrames = arg;
     }
+
     void setRecvTimeout(double recvTimeout) {
         if (recvTimeout < 0.0) {
             throw new IllegalArgumentException("Receive timeout argument must be zero or a positive number in seconds.");

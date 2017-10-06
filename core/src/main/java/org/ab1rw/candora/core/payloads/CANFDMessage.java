@@ -2,9 +2,9 @@ package org.ab1rw.candora.core.payloads;
 import org.ab1rw.candora.core.CANId;
 import java.io.Serializable;
 import java.util.Arrays;
-
 /**
  * A CAN FD Message Payload
+ * @see CANMessage
  */
 public class CANFDMessage extends CANMessage implements Serializable {
     // CAN FD has a limited range of allowed payload widths, as follows
@@ -14,37 +14,38 @@ public class CANFDMessage extends CANMessage implements Serializable {
     protected final byte [] payload;
 
     /**
-     * ctor for the message receive phase.
-     * @param _gatewayId
-     * @param _interfaceId
-     * @param _id
-     * @param _payload
-     * @param _kernelTimeStamp
+     * ctor for the message receive phase by the adapter.
+     * @param _gatewayId the arbitrary gateway ID where this CAN message arrived from.
+     * @param _interfaceId the can interface ID on the gateway machine where this message appeared.
+     * @param _id can address
+     * @param _payload wire payload
+     * @param _kernelTimeStamp The Linux SocketCAN receive timestamp (from SO_RCVTIMEO ioctl)
+     * @throws IllegalArgumentException if an unsupported message payload length is given
      */
     public CANFDMessage(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload, long _kernelTimeStamp) {
         super(_gatewayId, _interfaceId, _kernelTimeStamp);
         id=_id;
         payload = _payload;
+        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         checkPayloadLength();
     }
 
     /**
-     * ctor to prepare a message for transmission
-     * @param _id
-     * @param _payload
+     * ctor to prepare a message for transmission by user code.
+     * @param _id CAN id (SFF or EFF)
+     * @param _payload Message payload, restricted by CAN FD specification lengths.
+     * @throws IllegalArgumentException if an unsupported message payload length is given
      */
     public CANFDMessage(CANId _id, byte[] _payload) {
         super(null, null, -1);
+        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         id=_id; payload=_payload;
         checkPayloadLength();
     }
 
     private void checkPayloadLength() {
-        if (payload.length > 64) {
-            throw new IllegalArgumentException("Invalid Message. CAN FD Message Payloads are limited to at most 64 bytes ; value given to constructor is "+payload.length+" bytes. ");
-        }
         if (Arrays.binarySearch(allowedPayloadWidths, payload.length) < 0) {
-            throw new IllegalArgumentException("Invalid payload requested. CAN FD Messages are limited to lengths of " + Arrays.asList(allowedPayloadWidths) + " : "+payload.length);
+            throw new IllegalArgumentException("Invalid payload size. CAN FD Messages are limited to lengths of " + Arrays.asList(allowedPayloadWidths) + " : "+payload.length);
         }
     }
 
@@ -53,11 +54,12 @@ public class CANFDMessage extends CANMessage implements Serializable {
     }
 
     public byte[] getPayload() {
-        return payload;
+        // protect immutability of the message, returns a copy
+        return Arrays.copyOf(payload, payload.length);
     }
 
     public int getPayloadLength() {
-	return payload.length;
+        return payload.length;
 	}
 
 

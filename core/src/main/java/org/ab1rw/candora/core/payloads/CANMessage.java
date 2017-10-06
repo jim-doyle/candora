@@ -1,6 +1,7 @@
 package org.ab1rw.candora.core.payloads;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 /**
  * CAN Message base class.
@@ -8,32 +9,34 @@ import java.io.Serializable;
  */
 public abstract class CANMessage implements Serializable {
 
-    protected final String gatewayId;
-    protected final String interfaceId;
+
+    protected final Optional<String> gatewayId;
+    protected final Optional<String> interfaceId;
     protected final long kernelTimeStamp;
 
-    public CANMessage(String gatewayId, String interfaceId, long kernelTimeStamp) {
-        this.gatewayId = gatewayId;
-        this.interfaceId = interfaceId;
+    public CANMessage(String _gatewayId, String _interfaceId, long kernelTimeStamp) {
+
+        this.gatewayId = Optional.of(_gatewayId);
+        this.interfaceId = Optional.of(_interfaceId);
         this.kernelTimeStamp = kernelTimeStamp;
-        assert gatewayId != null && ! gatewayId.isEmpty();
-        assert interfaceId != null & ! interfaceId.isEmpty();
+        assert gatewayId != null;
+        assert interfaceId != null;
         assert kernelTimeStamp > 0;
     }
 
     /**
      * For messages received by native code, identifies the gateway instance where the message was received.
-     * @return i.e. "localhost", may be null.
+     * @return i.e. "localhost", may be empty but no null.
      */
-    public String getGatewayId() {
+    public Optional<String> getGatewayId() {
         return gatewayId;
     }
 
     /**
      * Identifies the can interface on the gateway node where this message received or must go out from.
-     * @return i.e. "can0"
+     * @return i.e. "can0" may be empty, but not null;
      */
-    public String getInterfaceId() {
+    public Optional<String> getInterfaceId() {
         return interfaceId;
     }
 
