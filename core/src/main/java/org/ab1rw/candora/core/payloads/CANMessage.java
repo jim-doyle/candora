@@ -1,12 +1,12 @@
 package org.ab1rw.candora.core.payloads;
-import org.ab1rw.candora.core.CANId;
-import java.util.Arrays;
+
+import java.io.Serializable;
 
 /**
  * CAN Message base class.
  * Note that this is an immutable object.
  */
-public abstract class CANMessage implements java.io.Serializable {
+public abstract class CANMessage implements Serializable {
 
     protected final String gatewayId;
     protected final String interfaceId;
@@ -22,19 +22,29 @@ public abstract class CANMessage implements java.io.Serializable {
     }
 
     /**
-     *
-     * @return i.e. "localhost"
+     * For messages received by native code, identifies the gateway instance where the message was received.
+     * @return i.e. "localhost", may be null.
      */
     public String getGatewayId() {
         return gatewayId;
     }
 
     /**
-     *
+     * Identifies the can interface on the gateway node where this message received or must go out from.
      * @return i.e. "can0"
      */
     public String getInterfaceId() {
         return interfaceId;
+    }
+
+    static String payloadToStringHelper(byte [] arg) {
+        StringBuffer tmp = new StringBuffer();
+        if (arg.length > 0) tmp.append("0x");
+        for (byte b : arg) {
+            tmp.append(String.format("%02x",b));
+            tmp.append(" ");
+        }
+        return tmp.toString();
     }
 
 }

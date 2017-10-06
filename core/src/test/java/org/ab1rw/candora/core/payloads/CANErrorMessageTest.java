@@ -7,7 +7,7 @@ public class CANErrorMessageTest {
 
     @Test
     public void test1() {
-        CANErrorMessage m = new CANErrorMessage("gate", "can0", new CANId(1), new byte [] {0x1, 0x2, 0x3}, 0L);
+        //CANErrorMessage m = new CANErrorMessage("gate", "can0", new CANId(1), new byte [] {0x1, 0x2, 0x3}, 0L);
         // XXX TO DO - add validation tests!
     }
 }
