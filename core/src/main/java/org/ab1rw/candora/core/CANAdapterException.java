@@ -14,8 +14,8 @@ public class CANAdapterException extends CANException {
         super(arg);
     }
 
-    public CANAdapterException() {
-        super("JNI layer fault.");
+    public CANAdapterException(String arg1, Throwable arg2) {
+        super(arg1, arg2);
     }
 
 }

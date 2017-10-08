@@ -1,5 +1,6 @@
 package org.ab1rw.candora.core.adapter;
 
+import org.ab1rw.candora.core.CANAdapterException;
 import org.ab1rw.candora.core.CANException;
 import org.ab1rw.candora.core.CANId;
 import org.ab1rw.candora.core.payloads.*;
@@ -24,8 +25,13 @@ public class LinuxSocketCANAdapter {
     private final NativeSocketCANAdapter nativeAdapter;
     private String gatewayId;
 
-    public LinuxSocketCANAdapter() {
-        System.loadLibrary("candora-native");
+    public LinuxSocketCANAdapter() throws CANAdapterException {
+        try {
+            System.loadLibrary("candora-native");
+        } catch (UnsatisfiedLinkError ule) {
+            throw new CANAdapterException("Error loading candora-native.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
+                    "check for for existence and access permissions.",ule);
+        }
         nativeAdapter = new NativeSocketCANAdapter();
     }
 
@@ -54,12 +60,48 @@ public class LinuxSocketCANAdapter {
     }
 
     /**
-     * Blocking send
+     * Setup the adapter to use a specific interface on the host,
+     * @param arg i.e. "can1" if this adapter instance will only send and receive to can1
+     */
+    void setInterfaceId(String arg) {
+        nativeAdapter.setInterfaceId(arg);
+    }
+
+    /**
+     * Setup the adapter to receive from any interface on the host, and send a message out
+     * on ALL interfaces.
+     */
+    void setAllInterfaces() {
+        nativeAdapter.setAllInterfaces();
+    }
+
+    /**
+     * If set, the receive(...) method can return CANErrorMessage instances, as well as CANFDMessages.
+     * @param arg enables receipt of bus and controller error event messages
+     */
+    void setErrorFramesEnabled(boolean arg) {
+        nativeAdapter.setErrorFramesEnabled(arg);
+    }
+
+    /**
+     * Blocking message send
      * @param message Attempts to a message, either CAN 2.0 or CAN FD
      * @throws CANException any subclass of the this root exception
      */
-    public void send(CANMessage message) throws CANException {
+    public void send(CANFDMessage message) throws CANException {
+
+        if (message.getGatewayId().get().equals(gatewayId)) {
+            // not destined for this gateway
+        }
+        if (false) {
+            // not destined for this interface
+        }
+
         NativeCANFrame f = new NativeCANFrame();
+        f.can_data = message.getPayload();
+        f.can_dlc = (byte) message.getPayloadLength();
+        f.can_id = message.getId().getBits();
+
         log.fine("about to call native method to send CAN message.");
         if (true) throw new RuntimeException("finish this functionality!");
         nativeAdapter.send(f);
@@ -83,6 +125,7 @@ public class LinuxSocketCANAdapter {
             return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.timestamp);
         }
 
+        // Not an error frame, then construct an immutable value object to return to the caller.
         final CANId id;
         // determine if we are using 11 or 29 bit bus addresses, and appropriately mask off bits
         if (f.effFlag) {

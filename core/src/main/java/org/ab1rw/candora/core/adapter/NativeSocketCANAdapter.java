@@ -30,7 +30,14 @@ class NativeSocketCANAdapter {
     private int socket;
     private boolean adapterReady;
 
-    void setErrorFramesEnabled(boolean  arg) {
+    void setInterfaceId(String arg) {
+        useOnlyInterfaceId=arg;
+        useAllInterfaces=false;
+    }
+    void setAllInterfaces() {
+        useAllInterfaces=true;
+    }
+    void setErrorFramesEnabled(boolean arg) {
         recvErrorFrames = arg;
     }
 

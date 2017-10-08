@@ -6,8 +6,13 @@ import org.ab1rw.candora.core.payloads.CANFDMessage;
 
 import java.util.Arrays;
 /**
- * Copyright Header
+ * Mutable Value Object to shuttle canfd_frame data between the C++ Native code. and the Java adapter class.
  * Package-scoped to discourage exposure of this class beyond the implementation of an Adapter.
+ *
+ * Never expose this class public ; it is only here to make the C++ code abit simpler.
+ * Copyright Header
+ *
+ *
  */
 class NativeCANFrame {
 
@@ -24,7 +29,6 @@ class NativeCANFrame {
 
     NativeCANFrame() {}
 
-
     /*
      * Note that all attribute names, and types, are coupled to C code in the nativeapi maven module of
      * this project. If you change signature here, you must reflect the same changes in the C code, and
@@ -37,10 +41,10 @@ class NativeCANFrame {
     protected byte reserved0, reserved1;
     protected byte[] can_data; // = new byte[64];
 
-    /** If true, Extended Frame */
-    protected boolean effFlag;
-    protected boolean errFlag;
-    protected int timestamp;
+
+    protected boolean effFlag; // set by native adapter, if extended frame (29 bit address)
+    protected boolean errFlag; // set by nativ adapter if payload contains error bits
+    protected int timestamp;   // set by native adapter, SocketCAN implementation specific timestamp.
 
 
 }
