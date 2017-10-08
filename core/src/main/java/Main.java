@@ -19,7 +19,6 @@ public class Main {
 	    LinuxSocketCANAdapter adapter = new LinuxSocketCANAdapter();
 	    adapter.setReceiveTimeout(1.0);
 
-
 		CANId arduino = new CANId(0x41C);
 		CANFDMessage turnLightOnMsg = new CANFDMessage(arduino, new byte [] { 0x1} );
 		CANFDMessage turnLightOffMsg = new CANFDMessage(arduino, new byte [] { 0x0} );

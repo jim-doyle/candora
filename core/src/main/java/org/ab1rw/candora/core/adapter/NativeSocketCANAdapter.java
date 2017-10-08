@@ -18,15 +18,13 @@ class NativeSocketCANAdapter {
 
     private final static Logger nativeLogger = Logger.getLogger(NativeSocketCANAdapter.class.getName());
 
-    // these private members are manipulated by the C native library
+    // these private members are expectted by the C++ code
     private boolean recvErrorFrames = true;
     private boolean useAllInterfaces = true;
     private String useOnlyInterfaceId;
-
     private int recvTimeoutSeconds = 0;
     private int recvTimeoutMicroseconds= 0;
 
-    private static Long testing = new Long(1);
     private int socket;
     private boolean adapterReady;
 

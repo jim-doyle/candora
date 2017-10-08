@@ -25,9 +25,9 @@
 #include "logging.h"
 
 #define log_msg_bufsz 128
-
 static jclass logger;
 
+static const char * version = "Build Version Goes here";
 static bool atMostOnceInit = false;
 
 // cache JNI classes, fieldIDs, and method IDs after init() to avoid expensive "reach backs" into JVM
@@ -78,7 +78,7 @@ void throwCANReceiveTimeoutException(JNIEnv * env) {
 /* Implements Java Native Method */
 JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
 (JNIEnv * env, jobject object) {
-  return  NULL;
+  return NULL;
 }
 
 
@@ -89,7 +89,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   jclass cls = env->GetObjectClass(object);
  
   // first time through, capture and cache all the static JNI metadata. This not only makes
-  // the code more efficient at runtime, but also easier to read.
+  // the code more efficient at runtime, but also much easier to read and maintain
   if (! atMostOnceInit) {
     // cache all the java classes used in the native adapter.
     jniClassCache.clsCANNativeFrame =  env->FindClass("org/ab1rw/candora/core/adapter/NativeCANFrame");
@@ -116,7 +116,6 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeFrameCache.timestamp = env->GetFieldID(nf,"timestamp","I");
     jniNativeFrameCache.canInterface = env->GetFieldID(nf,"canInterface","Ljava/lang/String");
     if (env->ExceptionOccurred()) return;
-
     atMostOnceInit = true;
   }
 
@@ -163,7 +162,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
      return throwCANAdapterException(env, "error when setsockopt(CAN_RAW_FD_FRAMES)", errno);
    }
 
-  // enable receive of all error frames 
+  // enable receive of all error frames
   can_err_mask_t err_mask = CAN_ERR_MASK;
   if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
                  &err_mask, sizeof(can_err_mask_t)) < 0) {
@@ -177,7 +176,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   assert (f_to_us != NULL && f_to_us != NULL);
   jint to_s = env->GetIntField(object, f_to_s);
   jint to_us = env->GetIntField(object, f_to_us);
-  if (to_s > 0 || to_us > 0) {
+  if (to_s > 0 || to_us > 0) {  // blocking read with a timeout
     struct timeval recv_timeout;
     recv_timeout.tv_sec=to_s;
     recv_timeout.tv_usec=to_us;
@@ -187,22 +186,26 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
       return throwCANAdapterException(env, "error when setsockopt(SO_RCVTIMEO)", errno);\
     }
 
+  } else {
+    // blocking read without a timeout
   }
 
   // Interface bind
   struct ifreq ifr;
   struct sockaddr_can addr;
-    if (env->GetBooleanField(jniNativeAdapterCache.fldUseAllInterfaces) == true) {
+  jfieldID f_useAll = env->GetBooleanField(jniNativeAdapterCache.fldUseAllInterfaces);
+  boolean = useAllInterfaces = env->GetBooleanField(f_useAll);
+    if (useAllInterfaces) {
         ifr.ifr_index=0;
     } else {
-        env->GetObjectField();  // XXX TODO extract the string field!
-        strcpy(ifr.ifr_name, "can0" );
+        jfieldID f_ifc = env->GetBooleanField(jniNativeAdapterCache.fldUseAllInterfaces);
+        jstring ifc = env->GetObjectField(ifc);
+        strcpy(ifr.ifr_name, env->GetStringUTFCHars(ifc) );
         if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
             close(s);
             return throwCANAdapterException(env, "error when ioctl(SIOCGIFINDEX)", errno);
         }
     }
-
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
   if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
@@ -210,6 +213,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     return throwCANAdapterException(env, "bind()", errno);    
   }
 
+  // Store back into the native object the unix handles needed to service future method calls...
   env->SetIntField(object, jniNativeAdapterCache.fldSocket, s);
   env->SetBooleanField(object, jniNativeAdapterCache.fldReadyFlag, true);
   printf("init done\n");

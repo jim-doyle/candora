@@ -129,9 +129,9 @@ public class LinuxSocketCANAdapter {
         final CANId id;
         // determine if we are using 11 or 29 bit bus addresses, and appropriately mask off bits
         if (f.effFlag) {
-            id = new CANId(f.can_id & 0x1FFFFFFF);  /* CAN_EFF_MASK */
+            id = new CANId(f.can_id & 0x1FFFFFFF);  /* CAN_EFF_MASK - 29 bit address */
         } else {
-            id = new CANId(f.can_id & 0x7FF);       /* CAN_SFF_MASK */
+            id = new CANId(f.can_id & 0x7FF);       /* CAN_SFF_MASK - 11 bit address */
         }
 
         // build an return a new immutable message
