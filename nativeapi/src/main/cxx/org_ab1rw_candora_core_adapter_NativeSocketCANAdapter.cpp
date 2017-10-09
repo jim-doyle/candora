@@ -42,8 +42,8 @@ static struct {
 static struct {
   jfieldID fldSocket;
   jfieldID fldReadyFlag;
-  jfield useAllInterfaces;
-  jfield useOnlyInterfaceId;
+  jfieldID fldUseAllInterfaces;
+  jfieldID fldUseOnlyInterfaceId;
 } jniNativeAdapterCache;
   
 static struct {
@@ -93,7 +93,6 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   if (! atMostOnceInit) {
     // cache all the java classes used in the native adapter.
     jniClassCache.clsCANNativeFrame =  env->FindClass("org/ab1rw/candora/core/adapter/NativeCANFrame");
-    
     jniClassCache.clsCANReceiveTimeoutException = env->FindClass("org/ab1rw/candora/core/CANReceiveTimeoutException");
     jniClassCache.clsCANAdapterException = env->FindClass("org/ab1rw/candora/core/CANAdapterException");
 
@@ -103,8 +102,9 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeAdapterCache.fldReadyFlag = env->GetFieldID(cls,"adapterReady","Z");
     jniNativeAdapterCache.fldSocket = env->GetFieldID(cls,"socket","I");
     jniNativeAdapterCache.fldUseAllInterfaces =  env->GetFieldID(cls,"useAllInterfaces","Z");
-    jniNativeAdapterCache.fldUseOnlyInterfaceId = env->GetFieldID(cls,"useOnlyInterfaceID","Ljava/lang/String");
-
+    jniNativeAdapterCache.fldUseOnlyInterfaceId = env->GetFieldID(cls,"useOnlyInterfaceId","Ljava/lang/String;");
+    if (env->ExceptionOccurred()) return;
+    
     // cache the inner parts of the CANNativeFrame value object
     jclass nf = jniClassCache.clsCANNativeFrame;
     jniNativeFrameCache.can_id = env->GetFieldID(nf,"can_id","I");
@@ -114,7 +114,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeFrameCache.effFlag = env->GetFieldID(nf,"effFlag","Z");
     jniNativeFrameCache.errFlag = env->GetFieldID(nf,"errFlag","Z");
     jniNativeFrameCache.timestamp = env->GetFieldID(nf,"timestamp","I");
-    jniNativeFrameCache.canInterface = env->GetFieldID(nf,"canInterface","Ljava/lang/String");
+    jniNativeFrameCache.canInterface = env->GetFieldID(nf,"canInterface","Ljava/lang/String;");
     if (env->ExceptionOccurred()) return;
     atMostOnceInit = true;
   }
@@ -191,27 +191,35 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   }
 
   // Interface bind
+  jboolean useAllInterfaces = env->GetBooleanField(object, jniNativeAdapterCache.fldUseAllInterfaces);
   struct ifreq ifr;
   struct sockaddr_can addr;
-  jfieldID f_useAll = env->GetBooleanField(jniNativeAdapterCache.fldUseAllInterfaces);
-  boolean = useAllInterfaces = env->GetBooleanField(f_useAll);
-    if (useAllInterfaces) {
-        ifr.ifr_index=0;
-    } else {
-        jfieldID f_ifc = env->GetBooleanField(jniNativeAdapterCache.fldUseAllInterfaces);
-        jstring ifc = env->GetObjectField(ifc);
-        strcpy(ifr.ifr_name, env->GetStringUTFCHars(ifc) );
-        if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+  addr.can_family = AF_CAN;
+  if (! useAllInterfaces) {
+
+
+      // next 6 lines, ritual to get the interface name from the Adapter Java object so we can pass it to struct ifreq!
+      jstring ifc = (jstring) env->GetObjectField(object, jniNativeAdapterCache.fldUseOnlyInterfaceId);
+      jsize len = env->GetStringLength(ifc);
+      jboolean iscopy = true;
+      const char * foo = env->GetStringUTFChars(ifc, &iscopy);
+      strncpy(ifr.ifr_name, foo , len );
+      env->ReleaseStringUTFChars(ifc, foo); 
+
+      if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
             close(s);
             return throwCANAdapterException(env, "error when ioctl(SIOCGIFINDEX)", errno);
-        }
-    }
-  addr.can_family = AF_CAN;
-  addr.can_ifindex = ifr.ifr_ifindex;
-  if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    close(s);
-    return throwCANAdapterException(env, "bind()", errno);    
+      }
+      addr.can_ifindex = ifr.ifr_ifindex;
+  } else {
+    addr.can_ifindex = 0;  // To bind on all CAN interface, the interface index is set to zero.
   }
+  
+  if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        close(s);
+        return throwCANAdapterException(env, "bind()", errno);    
+  }
+  
 
   // Store back into the native object the unix handles needed to service future method calls...
   env->SetIntField(object, jniNativeAdapterCache.fldSocket, s);
@@ -256,9 +264,17 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   bcopy(candata, txframe.data, txframe.len);
   env->ReleaseByteArrayElements(*byteArray, candata, 0);
 
-    
-  struct sockaddr_can addr;   // XXX - need to use the same sockaddr from bind?
-  // transmit
+
+  // To write CAN frames on sockets bound to 'any' CAN interface the
+  // outgoing interface has to be defined certainly.
+ 
+  struct sockaddr_can addr;
+  struct ifreq ifr;
+  strcpy(ifr.ifr_name, "can0")   // XXX HACK - fix me! ;
+  ioctl(socket, SIOCGIFINDEX, &ifr);
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = ifr.ifr_ifindex;
+  
   if (sendto(socket, &txframe, sizeof(struct can_frame), 0,
 	     (struct sockaddr*)&addr, sizeof(addr)) < 0) {
     return throwCANAdapterException(env, "sendto()", errno);    
@@ -300,11 +316,12 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   // Extract the interface that this request came in from
    struct ifreq ifr;
    ifr.ifr_ifindex = addr.can_ifindex;
-   if (ioctl(s, SIOCGIFNAME, &ifr)<0) {
+   if (ioctl(socket, SIOCGIFNAME, &ifr)<0) {
    }
 
   // now stuff the results into the mutable argument passed in...
-  jstring ifname = env->NewStringUTF(ifname);
+  // ifr.ifr_name;
+  jstring ifname = env->NewStringUTF(ifr.ifr_name);
   env->SetObjectField(arg1, jniNativeFrameCache.canInterface, ifname);
 
   env->SetIntField(arg1, jniNativeFrameCache.can_id, rxframe.can_id);

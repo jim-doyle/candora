@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  */
 public class LinuxSocketCANAdapter {
 
-    private static final Logger log = LogManager.getLogManager().getLogger(LinuxSocketCANAdapter.class.getName());
+    private static final Logger log = Logger.getLogger(LinuxSocketCANAdapter.class.getName());
     private final NativeSocketCANAdapter nativeAdapter;
     private String gatewayId;
 
@@ -90,12 +90,12 @@ public class LinuxSocketCANAdapter {
      */
     public void send(CANFDMessage message) throws CANException {
 
-        if (message.getGatewayId().get().equals(gatewayId)) {
+        //if (message.getGatewayId().get().equals(gatewayId)) {
             // not destined for this gateway
-        }
-        if (false) {
-            // not destined for this interface
-        }
+       // }
+       // if (false) {
+       //     // not destined for this interface
+        //}
 
         NativeCANFrame f = new NativeCANFrame();
         f.can_data = message.getPayload();
@@ -103,7 +103,6 @@ public class LinuxSocketCANAdapter {
         f.can_id = message.getId().getBits();
 
         log.fine("about to call native method to send CAN message.");
-        if (true) throw new RuntimeException("finish this functionality!");
         nativeAdapter.send(f);
         log.fine("CAN message sent by native adapter");
     }

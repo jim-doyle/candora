@@ -16,8 +16,8 @@ public abstract class CANMessage implements Serializable {
 
     public CANMessage(String _gatewayId, String _interfaceId, long kernelTimeStamp) {
 
-        this.gatewayId = Optional.of(_gatewayId);
-        this.interfaceId = Optional.of(_interfaceId);
+        this.gatewayId = Optional.ofNullable(_gatewayId);
+        this.interfaceId = Optional.ofNullable(_interfaceId);
         this.kernelTimeStamp = kernelTimeStamp;
         assert gatewayId != null;
         assert interfaceId != null;
