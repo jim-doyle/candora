@@ -57,7 +57,7 @@ namespace org_ab1rw_candora {
    jfieldID can_fd_flags;
    jfieldID reserved0, reserved1;
    jfieldID can_data;
-   jfieldID effFlag, errFlag;
+   jfieldID effFlag, errFlag, rtrFlag;
    jfieldID timestamp;
    jfieldID canInterface;
  } jniNativeFrameCache;
