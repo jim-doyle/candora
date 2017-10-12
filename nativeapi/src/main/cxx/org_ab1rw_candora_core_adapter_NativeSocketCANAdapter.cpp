@@ -7,6 +7,8 @@
  * https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
  * http://www.math.uni-hamburg.de/doc/java/tutorial/native1.1/implementing/array.html
  */
+using namespace org.ab1rw.candora;
+
 #include "org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h"
 #include <jni.h>
 #include <jni_md.h>
@@ -24,7 +26,7 @@
 #include <linux/sockios.h>
 
 #define log_msg_bufsz 128
-static const char * version = "Build Version Goes here";
+extern const char *gitversion;
 static bool atMostOnceInit = false;
 
 // cache JNI classes, fieldIDs, and method IDs after init() to avoid expensive "reach backs" into JVM
@@ -72,10 +74,10 @@ void throwCANReceiveTimeoutException(JNIEnv * env) {
   env->ThrowNew(exception, arg1);
 }
 
-/* Implements Java Native Method */
+/* getVersion Implements Java Native Method */
 JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
 (JNIEnv * env, jobject object) {
-  return NULL;
+  return env->NewStringUTF(gitversion);
 }
 
 
