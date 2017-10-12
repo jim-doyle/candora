@@ -3,10 +3,11 @@ import org.ab1rw.candora.core.CANId;
 import java.io.Serializable;
 import java.util.Arrays;
 /**
- * A CAN FD Message Payload
+ * A CAN FD Message Payload consisting of an address (ID) and bytes constrained in length.
  * @see CANMessage
  */
 public class CANFDMessage extends CANMessage implements Serializable {
+
     // CAN FD has a limited range of allowed payload widths, as follows
     private static final int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
 
@@ -27,7 +28,7 @@ public class CANFDMessage extends CANMessage implements Serializable {
         id=_id;
         payload = _payload;
         if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
-        checkPayloadLength();
+        checkPayloadLength(payload);
     }
 
     /**
@@ -40,13 +41,7 @@ public class CANFDMessage extends CANMessage implements Serializable {
         super(null, null, -1);
         if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         id=_id; payload=_payload;
-        checkPayloadLength();
-    }
-
-    private void checkPayloadLength() {
-        if (Arrays.binarySearch(allowedPayloadWidths, payload.length) < 0) {
-            throw new IllegalArgumentException("Invalid payload size. CAN FD Messages are limited to lengths of " + Arrays.asList(allowedPayloadWidths) + " : "+payload.length);
-        }
+        checkPayloadLength(payload);
     }
 
     public CANId getId() {
@@ -87,5 +82,11 @@ public class CANFDMessage extends CANMessage implements Serializable {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + Arrays.hashCode(payload);
         return result;
+    }
+
+    private static void checkPayloadLength(byte [] arg) {
+        if (Arrays.binarySearch(allowedPayloadWidths, arg.length) < 0) {
+            throw new IllegalArgumentException("Invalid payload size. CAN FD Messages are limited to lengths of " + Arrays.asList(allowedPayloadWidths) + " : "+arg.length);
+        }
     }
 }

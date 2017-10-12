@@ -22,11 +22,8 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <linux/sockios.h>
-#include "logging.h"
 
 #define log_msg_bufsz 128
-static jclass logger;
-
 static const char * version = "Build Version Goes here";
 static bool atMostOnceInit = false;
 
@@ -119,42 +116,18 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     atMostOnceInit = true;
   }
 
-  //jboolean initFlag = (*env->GetBooleanField(env,object, jniCache.fldReadyFlag);
-  //printf("%s",initFlag);
-  
-
-  //jclass cls = (*env->GetObjectClass(env, object);
-  //jfieldID fidNumber = (*env->GetStaticFieldID(env,cls, "nativeLogger", "Ljava/util/logging/Logger;");
-  //assert(fidNumber != NULL);
-  //
-  //jclass p = (*env->FindClass(env, "java/util/logging/Logger");
-  //assert (p != NULL);
-  //jmethodID mx = (*env->GetMethodID(env, p, "info", "(Ljava/lang/String;)V");
-  //assert (mx != NULL);
-  //  (*env->CallVoidMethod(env, logger, mx, (*env->NewStringUTF(env, "Hey!"));
-  //
-  //jobject loggerField = (*env->GetStaticObjectField(env,
-  //						     cls,						    // fidNumber);    
-  //assert (loggerField != NULL);
-  //jmethodID m = (*env->GetMethodID(env, loggerField, "info",
-  //				    "(Ljava/lang/String)V");
-  //assert(m!=NULL);
-  //(*env->CallVoidMethod(env, logger, m, (*env->NewStringUTF(env, "Hi!"));
-  //LOG_INFO(env, logger, "Initialized!");
-  //
-  // are we already initialized, if so log warn and return gracefully.
 
   if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == true) {
     return;  // already initialized, just return....
   }
 
-  // Initialize. Create and bind CAN socket, set socket options.
+  // new raw socket
   const int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
   if (s < 0) {
     return throwCANAdapterException(env, "socket()", errno);
   }
     
-   // enable support for CAN 2.0x and CAN FD frames 
+   // enable support for mutual CAN 2.0x and CAN FD frames
    int enable = 1;
    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
 		  &enable, sizeof(enable)) < 0) {
@@ -187,7 +160,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     }
 
   } else {
-    // blocking read without a timeout
+    // no timeout means a blocking read that may never return
   }
 
   // Interface bind
@@ -196,7 +169,6 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   struct sockaddr_can addr;
   addr.can_family = AF_CAN;
   if (! useAllInterfaces) {
-
 
       // next 6 lines, ritual to get the interface name from the Adapter Java object so we can pass it to struct ifreq!
       jstring ifc = (jstring) env->GetObjectField(object, jniNativeAdapterCache.fldUseOnlyInterfaceId);
@@ -219,22 +191,20 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
         close(s);
         return throwCANAdapterException(env, "bind()", errno);    
   }
-  
 
-  // Store back into the native object the unix handles needed to service future method calls...
+  // Store back into the native object the unix handles (socket) needed to service future method calls...
   env->SetIntField(object, jniNativeAdapterCache.fldSocket, s);
   env->SetBooleanField(object, jniNativeAdapterCache.fldReadyFlag, true);
-  printf("init done\n");
 }
 
-/* Implements Java Native Method */
+/* close()  Implements Java Native Method */
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_close
 (JNIEnv * env, jobject object) {
 
   if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == false) {
     return; // already closed, do no more.
   }
-
+  // Mark as not ready, then close the socket.
   env->SetBooleanField(object, jniNativeAdapterCache.fldReadyFlag, false);
   jint s = env->GetIntField(object, jniNativeAdapterCache.fldSocket);
   if (close(s)<0) {
@@ -242,9 +212,8 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   }
 }
 
-/* Implements Java Native Method */
+/* send() Implements Java Native Method */
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_send (JNIEnv * env, jobject object, jobject arg1) {
-
 
   if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == false) {
         return throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
@@ -282,13 +251,15 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   bzero(&txframe.data, txframe.len); 
 }
 
-/* Implements Java Native Method */
+/*  receive() Implements Java Native Method */
 JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_receive
 (JNIEnv * env, jobject object, jobject arg1) {
 
   if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == false) {
         return throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
   }
+
+  // Unlike above, we do not close the socket on receipt of a unix errno...
 
   jint socket = env->GetIntField(object, jniNativeAdapterCache.fldSocket);
 
@@ -303,7 +274,6 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     int e = errno;
     if (e == EAGAIN) {
       return throwCANReceiveTimeoutException(env);
-     
     }
     return throwCANAdapterException(env, "while doing system call recvfrom() on socket", errno);
   }
@@ -311,32 +281,33 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   // We've successfully received a packet ; extract the recv timestamp
   //assert(errno == 0);
   struct timeval recv_timestamp;
-  ioctl(socket, SIOCGSTAMP, &recv_timestamp);
+  if (ioctl(socket, SIOCGSTAMP, &recv_timestamp)<0) {
+
+  }
 
   // Extract the interface that this request came in from
-   struct ifreq ifr;
-   ifr.ifr_ifindex = addr.can_ifindex;
-   if (ioctl(socket, SIOCGIFNAME, &ifr)<0) {
-   }
+  struct ifreq ifr;
+  ifr.ifr_ifindex = addr.can_ifindex;
+  if (ioctl(socket, SIOCGIFNAME, &ifr)<0) {
+    // what to do ?
+  }
 
-  // now stuff the results into the mutable argument passed in...
-  // ifr.ifr_name;
+
   jstring ifname = env->NewStringUTF(ifr.ifr_name);
   env->SetObjectField(arg1, jniNativeFrameCache.canInterface, ifname);
-
   env->SetIntField(arg1, jniNativeFrameCache.can_id, rxframe.can_id);
   env->SetByteField(arg1, jniNativeFrameCache.can_dlc, rxframe.len);
   env->SetByteField(arg1, jniNativeFrameCache.can_fd_flags, rxframe.flags);
   env->SetIntField(arg1, jniNativeFrameCache.timestamp, recv_timestamp.tv_usec);    
-    // copy payload from c string > java array 
 
-    jbyteArray newBuffer = env->NewByteArray(rxframe.len);
-    jbyte * blah  = env->GetByteArrayElements(newBuffer,0);
-    bcopy(rxframe.data, blah, rxframe.len);
-    env->SetObjectField(arg1,jniNativeFrameCache.can_data,newBuffer); 
-    env->ReleaseByteArrayElements(newBuffer, blah, 0);
-    env->DeleteLocalRef(newBuffer);
-    bzero(&rxframe.data, rxframe.len);
+  // copy can payload from c struct > java array
+  jbyteArray newBuffer = env->NewByteArray(rxframe.len);
+  jbyte * bytes  = env->GetByteArrayElements(newBuffer,0);
+  bcopy(rxframe.data, bytes, rxframe.len);
+  env->SetObjectField(arg1,jniNativeFrameCache.can_data,newBuffer);
+  env->ReleaseByteArrayElements(newBuffer, bytes, 0);
+  env->DeleteLocalRef(newBuffer);
+  bzero(&rxframe.data, rxframe.len);
 
 }
 

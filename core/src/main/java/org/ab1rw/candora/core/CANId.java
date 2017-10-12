@@ -40,10 +40,10 @@ public class CANId implements Serializable {
 
     private static String toStringHelper(int arg) {
        if (arg <= CAN_EFF_MASK) {
-           return String.format("CANId{bits=%08x}",arg);
+           return String.format("CANId{id=%08x}",arg);
        } else {
            // SFF address format
-           return String.format("CANId{bits=%03x}",arg);
+           return String.format("CANId{id=%03x}",arg);
        }
     }
 

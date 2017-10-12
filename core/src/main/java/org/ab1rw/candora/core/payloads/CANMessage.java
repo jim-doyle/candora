@@ -16,8 +16,8 @@ public abstract class CANMessage implements Serializable {
 
     public CANMessage(String _gatewayId, String _interfaceId, long kernelTimeStamp) {
 
-        this.gatewayId = Optional.ofNullable(_gatewayId);
-        this.interfaceId = Optional.ofNullable(_interfaceId);
+        this.gatewayId = Optional.ofNullable(_gatewayId);  // TODO fix all this
+        this.interfaceId = Optional.ofNullable(_interfaceId);  // TODO fix all this
         this.kernelTimeStamp = kernelTimeStamp;
         assert gatewayId != null;
         assert interfaceId != null;
@@ -40,6 +40,11 @@ public abstract class CANMessage implements Serializable {
         return interfaceId;
     }
 
+    /**
+     * Helps print payload bytes in a readable way, always hex, always two digits, leading 0x
+     * @param arg byte array
+     * @return example "0x04 7f 00 01"
+     */
     static String payloadToStringHelper(byte [] arg) {
         StringBuffer tmp = new StringBuffer();
         if (arg.length > 0) tmp.append("0x");
@@ -47,6 +52,7 @@ public abstract class CANMessage implements Serializable {
             tmp.append(String.format("%02x",b));
             tmp.append(" ");
         }
+        tmp.deleteCharAt(tmp.length()-1);
         return tmp.toString();
     }
 

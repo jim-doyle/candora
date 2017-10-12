@@ -6,6 +6,7 @@ import org.ab1rw.candora.core.CANId;
 import org.ab1rw.candora.core.payloads.*;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -29,6 +30,7 @@ public class LinuxSocketCANAdapter {
         try {
             System.loadLibrary("candora-native");
         } catch (UnsatisfiedLinkError ule) {
+            log.log(Level.SEVERE, "", ule);
             throw new CANAdapterException("Error loading candora-native.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
                     "check for for existence and access permissions.",ule);
         }
@@ -37,13 +39,17 @@ public class LinuxSocketCANAdapter {
 
     @PostConstruct
     public void init() throws CANException {
+        log.log(Level.FINE,"Entering native code.");
         nativeAdapter.init();
+        log.log(Level.FINE,"Returned from native code.");
         log.log(Level.INFO, "Initialization of JNI Linux SocketCAN adapter successful.");
     }
 
     @PreDestroy
     public void close() throws CANException {
+        log.log(Level.FINE,"Entering native code.");
         nativeAdapter.close();
+        log.log(Level.FINE,"Returned from native code.");
         log.log(Level.INFO, "Shutdown of JNI Linux SocketCAN adapter complete.");
     }
 
@@ -84,27 +90,65 @@ public class LinuxSocketCANAdapter {
     }
 
     /**
+     * Creates a CAN FD Message suitable for use with the send() method.
+     * @param id CAN bus ID.
+     * @param payload payload
+     * @param pad pad bytes, to fill the unused positions in the frame when the given payload
+     *            does not completely fit one of the 16 permitted sizes.
+     * @return
+     */
+    public CANFDMessage create(CANId id, byte [] payload, byte pad) {
+
+        // find the least possible CAN FD dlc that will fit this payload.
+        int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
+        int i=0;
+        int use=0;
+        while (i<allowedPayloadWidths.length) {
+            if (allowedPayloadWidths[i] == payload.length) {
+                use=i;
+                break;
+            }
+            if (allowedPayloadWidths[i] < payload.length && allowedPayloadWidths[i+1] > payload.length) {
+                use = i + 1;
+                break;
+            }
+            else i++;
+        }
+
+        //
+        byte [] p = new byte[allowedPayloadWidths[use]];
+        if (allowedPayloadWidths[use] > payload.length) {
+            Arrays.fill(p, payload.length, allowedPayloadWidths[use], pad);
+        }
+        return null;
+    }
+
+    /**
+     * Creates a CAN 2.0 Message suitable for use with the send() method
+     * @param arg
+     * @param payload
+     * @return
+     */
+    public CAN2Message create(CANId arg, byte [] payload) {
+        return null;
+    }
+
+    /**
      * Blocking message send
      * @param message Attempts to a message, either CAN 2.0 or CAN FD
      * @throws CANException any subclass of the this root exception
      */
     public void send(CANFDMessage message) throws CANException {
 
-        //if (message.getGatewayId().get().equals(gatewayId)) {
-            // not destined for this gateway
-       // }
-       // if (false) {
-       //     // not destined for this interface
-        //}
-
         NativeCANFrame f = new NativeCANFrame();
         f.can_data = message.getPayload();
         f.can_dlc = (byte) message.getPayloadLength();
         f.can_id = message.getId().getBits();
 
-        log.fine("about to call native method to send CAN message.");
+        log.log(Level.FINE,"Entering native code.");
         nativeAdapter.send(f);
-        log.fine("CAN message sent by native adapter");
+        log.log(Level.FINE,"Returned from native code.");
+        log.log(Level.INFO,"Sent message {0}", new Object [] {message});
     }
 
     /**
@@ -114,13 +158,15 @@ public class LinuxSocketCANAdapter {
      */
     public CANMessage receive() throws CANException {
         NativeCANFrame f =  new NativeCANFrame();
-	    log.fine("waiting to receive CAN message from native socket.");
+        log.log(Level.FINE,"Entering native code.");
         nativeAdapter.receive(f);
-	    log.fine("CAN message received.");
+        log.log(Level.FINE,"Returned from native code.");
+
 
         if (f.errFlag) {
             // in this case, the error details are hiding in the can id bits; delegate the construction
             // off to our dedicated error message payload
+            log.log(Level.WARNING,"CAN bus error observed on {0}", new Object [] { f.canInterface });
             return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.timestamp);
         }
 
@@ -133,11 +179,6 @@ public class LinuxSocketCANAdapter {
             id = new CANId(f.can_id & 0x7FF);       /* CAN_SFF_MASK - 11 bit address */
         }
 
-        // build an return a new immutable message
         return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.timestamp);
-
     }
-
-
-
 }
