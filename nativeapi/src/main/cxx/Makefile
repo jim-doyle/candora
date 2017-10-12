@@ -7,9 +7,11 @@ CPPFLAGS=-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -g
 
 all:    libcandora-jni.so
 
-gitversion.c:   ../../../../.git/HEAD ../../../../.git/index
-    echo "using namespace org.ab1rw.candora;" > $@
-    echo "const char *gitversion = \"$(shell git rev-parse HEAD)\";" >> $@
+gitversion.cpp:   ../../../../.git/HEAD ../../../../.git/index
+	echo "namespace org_ab1rw_candora { " > $@
+	echo "const char *gitversion = \"$(shell git rev-parse HEAD)\";" >> $@
+	echo "}; " >> $@
+
 
 org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h:
 	javah -cp ../../../../core/target/classes   org.ab1rw.candora.core.adapter.NativeSocketCANAdapter
@@ -29,4 +31,4 @@ libcandora-jni.so: org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o gitve
 org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o :  org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.cpp org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h
 
 clean:
-	rm -f gitversion.c *.o a.out *.so
+	rm -f gitversion.cpp *.o a.out *.so

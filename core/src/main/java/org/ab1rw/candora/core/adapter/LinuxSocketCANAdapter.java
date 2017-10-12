@@ -28,10 +28,10 @@ public class LinuxSocketCANAdapter {
 
     public LinuxSocketCANAdapter() throws CANAdapterException {
         try {
-            System.loadLibrary("candora-native");
+            System.loadLibrary("candora-jni");
         } catch (UnsatisfiedLinkError ule) {
             log.log(Level.SEVERE, "", ule);
-            throw new CANAdapterException("Error loading candora-native.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
+            throw new CANAdapterException("Error loading libcandora-jni.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
                     "check for for existence and access permissions.",ule);
         }
         nativeAdapter = new NativeSocketCANAdapter();

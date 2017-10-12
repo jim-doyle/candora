@@ -7,7 +7,8 @@
  * https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
  * http://www.math.uni-hamburg.de/doc/java/tutorial/native1.1/implementing/array.html
  */
-using namespace org.ab1rw.candora;
+
+using namespace std;
 
 #include "org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h"
 #include <jni.h>
@@ -26,59 +27,65 @@ using namespace org.ab1rw.candora;
 #include <linux/sockios.h>
 
 #define log_msg_bufsz 128
-extern const char *gitversion;
-static bool atMostOnceInit = false;
 
-// cache JNI classes, fieldIDs, and method IDs after init() to avoid expensive "reach backs" into JVM
-// The cached items are global to the adapter.  These items should
-static struct {
-  jclass clsNativeSocketCANAdapter;
-  jclass clsCANAdapterException;
-  jclass clsCANReceiveTimeoutException;
-  jclass clsCANNativeFrame;
-} jniClassCache;
+// our jni code has to coreside with myriad other C++ libraries, so keep things in a namespace.
+namespace org_ab1rw_candora {
+ extern const char *gitversion;
+ static bool atMostOnceInit = false;
 
-static struct {
-  jfieldID fldSocket;
-  jfieldID fldReadyFlag;
-  jfieldID fldUseAllInterfaces;
-  jfieldID fldUseOnlyInterfaceId;
-} jniNativeAdapterCache;
+ // cache JNI classes, fieldIDs, and method IDs after init() to avoid expensive "reach backs" into JVM
+ // The cached items are global to the adapter.  These items should
+ static struct {
+   jclass clsNativeSocketCANAdapter;
+   jclass clsCANAdapterException;
+   jclass clsCANReceiveTimeoutException;
+   jclass clsCANNativeFrame;
+ } jniClassCache;
+
+ static struct {
+   jfieldID fldSocket;
+   jfieldID fldReadyFlag;
+   jfieldID fldUseAllInterfaces;
+   jfieldID fldUseOnlyInterfaceId;
+ } jniNativeAdapterCache;
   
-static struct {
-  jfieldID can_id;
-  jfieldID can_dlc;
-  jfieldID can_fd_flags;
-  jfieldID reserved0, reserved1;
-  jfieldID can_data;
-  jfieldID effFlag, errFlag;
-  jfieldID timestamp;
-  jfieldID canInterface;
-} jniNativeFrameCache;
+ static struct {
+   jfieldID can_id;
+   jfieldID can_dlc;
+   jfieldID can_fd_flags;
+   jfieldID reserved0, reserved1;
+   jfieldID can_data;
+   jfieldID effFlag, errFlag;
+   jfieldID timestamp;
+   jfieldID canInterface;
+ } jniNativeFrameCache;
 
-/* Throw a Java CANAdapterException from here back to the JVM */
-void throwCANAdapterException(JNIEnv * env, const char * reason, int errcode) {
-  char * arg1 = (char *)calloc(log_msg_bufsz, sizeof(char));
-  snprintf(arg1,  log_msg_bufsz, "%s %d %s", reason, errcode, strerror(errcode));
-  jclass exception =  env->FindClass("org/ab1rw/candora/core/CANAdapterException");
-  assert (exception != NULL);
-  env->ThrowNew(exception, arg1);
-}
+  /* Throw a Java CANAdapterException from here back to the JVM */
+  void throwCANAdapterException(JNIEnv * env, const char * reason, int errcode) {
+    char * arg1 = (char *)calloc(log_msg_bufsz, sizeof(char));
+    snprintf(arg1,  log_msg_bufsz, "%s %d %s", reason, errcode, strerror(errcode));
+    jclass exception =  env->FindClass("org/ab1rw/candora/core/CANAdapterException");
+    assert (exception != NULL);
+    env->ThrowNew(exception, arg1);
+  }
 
+  /* Throw a Java CANReceiveTimeoutException */
+  void throwCANReceiveTimeoutException(JNIEnv * env) {
+    char * arg1 = (char *)calloc(log_msg_bufsz, sizeof(char));
+    snprintf(arg1, log_msg_bufsz, "%s", "socket timeout while waiting on recvfrom()");
+    jclass exception = env->FindClass("org/ab1rw/candora/core/CANReceiveTimeoutException");
+    env->ThrowNew(exception, arg1);
+  }
 
-/* Throw a Java CANReceiveTimeoutException */
-void throwCANReceiveTimeoutException(JNIEnv * env) {
-  char * arg1 = (char *)calloc(log_msg_bufsz, sizeof(char));
-  snprintf(arg1, log_msg_bufsz, "%s", "socket timeout while waiting on recvfrom()");
-  jclass exception = env->FindClass("org/ab1rw/candora/core/CANReceiveTimeoutException");
-  env->ThrowNew(exception, arg1);
-}
+  /* getVersion Implements Java Native Method */
+  JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
+  (JNIEnv * env, jobject object) {
+    return env->NewStringUTF(gitversion);
+  }
+}; // namespace
 
-/* getVersion Implements Java Native Method */
-JNIEXPORT jstring JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_getVersionInfo
-(JNIEnv * env, jobject object) {
-  return env->NewStringUTF(gitversion);
-}
+using namespace org_ab1rw_candora;
+
 
 
 /* Implements Java Native Method */
@@ -210,7 +217,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   env->SetBooleanField(object, jniNativeAdapterCache.fldReadyFlag, false);
   jint s = env->GetIntField(object, jniNativeAdapterCache.fldSocket);
   if (close(s)<0) {
-    fprintf(stderr,"Unexpected errno %d while closing socket %d : %s\n",errno,s,strerror(errno)); 
+    fprintf(stderr,"candora: Unexpected errno %d while closing socket %d : %s\n",errno,s,strerror(errno)); 
   }
 }
 
@@ -241,7 +248,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
  
   struct sockaddr_can addr;
   struct ifreq ifr;
-  strcpy(ifr.ifr_name, "can0")   // XXX HACK - fix me! ;
+  strcpy(ifr.ifr_name, "can0");   // XXX HACK - fix me! ;
   ioctl(socket, SIOCGIFINDEX, &ifr);
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
