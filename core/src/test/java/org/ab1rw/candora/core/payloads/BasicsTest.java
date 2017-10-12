@@ -41,9 +41,6 @@ public class BasicsTest {
     @Test
     public void testCANFDPayloadLimits() {
 
-        //CANId id1 = new CANId(0x1FFFFFFF);
-        //CANFDMessage m = new CANFDMessage(id1, new byte [21] );
-
         int trial = 64;
         int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
         int i=0;

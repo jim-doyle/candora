@@ -1,8 +1,12 @@
+package org.ab1rw.candora.core.demo;
+
 import org.ab1rw.candora.core.*;
+import org.ab1rw.candora.core.CANId;
 import org.ab1rw.candora.core.adapter.*;
 import org.ab1rw.candora.core.payloads.CANErrorMessage;
 import org.ab1rw.candora.core.payloads.CANFDMessage;
 import org.ab1rw.candora.core.payloads.CANMessage;
+
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,15 +23,15 @@ public class Main {
     public static void main(String[] argv) throws CANException {
 
         final CANId arduino = new CANId(0x41C);
-        final CANFDMessage turnLightOnMsg = new CANFDMessage(arduino, new byte[]{0x1});
-        final CANFDMessage turnLightOffMsg = new CANFDMessage(arduino, new byte[]{0x0});
 
-        Logger logger = Logger.getLogger("Main");
+        Logger logger = Logger.getLogger("org.ab1rw.candora.core.demo.Main");
         logger.info("starting demo with Arduino.");
 
-        LinuxSocketCANAdapter adapter = new LinuxSocketCANAdapter();
+        LinuxSocketCANAdapter adapter = new LinuxSocketCANAdapter("localhost", "can0");
         adapter.setReceiveTimeout(1.0);  // 1 second receive timeout.
         adapter.init();
+        final CANFDMessage turnLightOnMsg = adapter.create(arduino, new byte[]{0x1}, (byte) 0);
+        final CANFDMessage turnLightOffMsg = adapter.create(arduino, new byte[]{0x0}, (byte) 0);
 
         int i = 0;
         while (true) {

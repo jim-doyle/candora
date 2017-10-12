@@ -3,12 +3,15 @@ package org.ab1rw.candora.core.adapter;
 import org.ab1rw.candora.core.CANAdapterException;
 import org.ab1rw.candora.core.CANException;
 import org.ab1rw.candora.core.CANId;
-import org.ab1rw.candora.core.payloads.*;
+import org.ab1rw.candora.core.payloads.CAN2Message;
+import org.ab1rw.candora.core.payloads.CANErrorMessage;
+import org.ab1rw.candora.core.payloads.CANFDMessage;
+import org.ab1rw.candora.core.payloads.CANMessage;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Arrays;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 /**
@@ -26,7 +29,13 @@ public class LinuxSocketCANAdapter {
     private final NativeSocketCANAdapter nativeAdapter;
     private String gatewayId;
 
-    public LinuxSocketCANAdapter() throws CANAdapterException {
+    /**
+     * Create an adapter using Java Native (JNI) methods to a Linux SocketCAN proxy.
+     * @param gatewayId i.e. myhost.domain.org
+     * @param interfaceId i.e. can0
+     * @throws CANAdapterException
+     */
+    public LinuxSocketCANAdapter(String gatewayId, String interfaceId) throws CANAdapterException {
         try {
             System.loadLibrary("candora-jni");
         } catch (UnsatisfiedLinkError ule) {
@@ -34,17 +43,30 @@ public class LinuxSocketCANAdapter {
             throw new CANAdapterException("Error loading libcandora-jni.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
                     "check for for existence and access permissions.",ule);
         }
+
         nativeAdapter = new NativeSocketCANAdapter();
+        this.gatewayId = gatewayId;
+        nativeAdapter.setInterfaceId(interfaceId);
     }
 
+    /**
+     * Activate the adapter prior to send or receive operations.
+     * @throws CANException
+     */
     @PostConstruct
     public void init() throws CANException {
+        if (gatewayId == null || gatewayId.trim().isEmpty()) throw new CANAdapterException("Adapter gateway ID property must be assigned a non-null, non-blank value.");
+        if (nativeAdapter.getInterfaceId() == null) throw new CANAdapterException("Adapter interface property must be assigned (i.e. can0) ");
         log.log(Level.FINE,"Entering native code.");
         nativeAdapter.init();
         log.log(Level.FINE,"Returned from native code.");
-        log.log(Level.INFO, "Initialization of JNI Linux SocketCAN adapter successful.");
+        log.log(Level.INFO, "Initialization of JNI Linux SocketCAN adapter successful on interface {0} as adapter {1} ", new Object [] {nativeAdapter.getInterfaceId(), gatewayId});
     }
 
+    /**
+     * Passivates the adapter, releasing LinuxCAN resources in the C++ native coded if needed.
+     * @throws CANException
+     */
     @PreDestroy
     public void close() throws CANException {
         log.log(Level.FINE,"Entering native code.");
@@ -54,7 +76,7 @@ public class LinuxSocketCANAdapter {
     }
 
     /**
-     * Set the socket receive timeout for the native adapter. When a non-zero timeout
+     * For configuration, Set the socket receive timeout for the native adapter. When a non-zero timeout
      * is active, the receive() method will throw CANReceiveTimeoutException upon expiration
      * of the timeout within the kernel.
      *
@@ -65,24 +87,9 @@ public class LinuxSocketCANAdapter {
        nativeAdapter.setRecvTimeout(timeout);
     }
 
-    /**
-     * Setup the adapter to use a specific interface on the host,
-     * @param arg i.e. "can1" if this adapter instance will only send and receive to can1
-     */
-    void setInterfaceId(String arg) {
-        nativeAdapter.setInterfaceId(arg);
-    }
 
     /**
-     * Setup the adapter to receive from any interface on the host, and send a message out
-     * on ALL interfaces.
-     */
-    void setAllInterfaces() {
-        nativeAdapter.setAllInterfaces();
-    }
-
-    /**
-     * If set, the receive(...) method can return CANErrorMessage instances, as well as CANFDMessages.
+     * For configuration, If set, the receive(...) method can return CANErrorMessage instances, as well as CANFDMessages.
      * @param arg enables receipt of bus and controller error event messages
      */
     void setErrorFramesEnabled(boolean arg) {
@@ -90,7 +97,7 @@ public class LinuxSocketCANAdapter {
     }
 
     /**
-     * Creates a CAN FD Message suitable for use with the send() method.
+     * Creates a CAN FD Message suitable for use with the send() method, selecting a CAN FD frame length and padding as needed.
      * @param id CAN bus ID.
      * @param payload payload
      * @param pad pad bytes, to fill the unused positions in the frame when the given payload
@@ -130,7 +137,7 @@ public class LinuxSocketCANAdapter {
      * @return
      */
     public CAN2Message create(CANId arg, byte [] payload) {
-        return null;
+        throw new RuntimeException("XXX Implement me.");
     }
 
     /**
@@ -165,7 +172,7 @@ public class LinuxSocketCANAdapter {
 
         if (f.errFlag) {
             // in this case, the error details are hiding in the can id bits; delegate the construction
-            // off to our dedicated error message payload
+            // off to our dedicated error message class to handle deciphering the bitwise data.
             log.log(Level.WARNING,"CAN bus error observed on {0}", new Object [] { f.canInterface });
             return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.timestamp);
         }
@@ -179,6 +186,9 @@ public class LinuxSocketCANAdapter {
             id = new CANId(f.can_id & 0x7FF);       /* CAN_SFF_MASK - 11 bit address */
         }
 
-        return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.timestamp);
+        // BRS: if ((f.can_fd_flags & 0x01) > 0)
+        // ESI: if ((f.can_fd_flags & 0x02) > 0)
+
+        return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.timestamp, f.rtrFlag, (f.can_fd_flags & 0x01)>0, (f.can_fd_flags & 0x02) > 0);
     }
 }

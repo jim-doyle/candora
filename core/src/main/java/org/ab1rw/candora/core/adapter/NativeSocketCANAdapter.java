@@ -32,9 +32,18 @@ class NativeSocketCANAdapter {
         useOnlyInterfaceId=arg;
         useAllInterfaces=false;
     }
+    String getInterfaceId() {
+        if (useAllInterfaces) return "*";
+        else return useOnlyInterfaceId;
+    }
+
+    /**
+     * Available for use, but has side effects for the send() method
+     */
     void setAllInterfaces() {
         useAllInterfaces=true;
     }
+
     void setErrorFramesEnabled(boolean arg) {
         recvErrorFrames = arg;
     }

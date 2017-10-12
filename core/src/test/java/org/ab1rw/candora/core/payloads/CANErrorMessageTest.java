@@ -3,6 +3,9 @@ package org.ab1rw.candora.core.payloads;
 import org.ab1rw.candora.core.CANId;
 import org.junit.Test;
 
+/**
+ * Basic exercises to decode an Linux CANSocket ErrorFrame into a Java object
+ */
 public class CANErrorMessageTest {
 
     @Test

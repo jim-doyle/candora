@@ -13,6 +13,8 @@ import java.util.List;
  */
 public class CANErrorMessage extends CANMessage {
 
+    private static final long serialVersionUID = 1L;
+
     private final List<String> messages;
     private ERROR_CATEGORY errorCategory;
     protected final byte [] payload;

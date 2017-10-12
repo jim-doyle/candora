@@ -9,6 +9,7 @@ import java.util.Optional;
  */
 public abstract class CANMessage implements Serializable {
 
+    private static final long serialVersionUID = 1L;
 
     protected final Optional<String> gatewayId;
     protected final Optional<String> interfaceId;

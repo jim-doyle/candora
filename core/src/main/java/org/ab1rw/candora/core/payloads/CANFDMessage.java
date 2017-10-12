@@ -8,11 +8,14 @@ import java.util.Arrays;
  */
 public class CANFDMessage extends CANMessage implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     // CAN FD has a limited range of allowed payload widths, as follows
     private static final int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
 
     protected final CANId id;
     protected final byte [] payload;
+    private final boolean RTRFrame, BRS, ESI;
 
     /**
      * ctor for the message receive phase by the adapter.
@@ -21,28 +24,21 @@ public class CANFDMessage extends CANMessage implements Serializable {
      * @param _id can address
      * @param _payload wire payload
      * @param _kernelTimeStamp The Linux SocketCAN receive timestamp (from SO_RCVTIMEO ioctl)
+     * @param rtr
+     * @param esi
+     * @param brs
      * @throws IllegalArgumentException if an unsupported message payload length is given
      */
-    public CANFDMessage(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload, long _kernelTimeStamp) {
+    public CANFDMessage(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload, long _kernelTimeStamp,
+                        boolean rtr, boolean brs, boolean esi) {
         super(_gatewayId, _interfaceId, _kernelTimeStamp);
         id=_id;
         payload = _payload;
         if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
         checkPayloadLength(payload);
+        RTRFrame=rtr; BRS=brs; ESI=esi;
     }
 
-    /**
-     * ctor to prepare a message for transmission by user code.
-     * @param _id CAN id (SFF or EFF)
-     * @param _payload Message payload, restricted by CAN FD specification lengths.
-     * @throws IllegalArgumentException if an unsupported message payload length is given
-     */
-    public CANFDMessage(CANId _id, byte[] _payload) {
-        super(null, null, -1);
-        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
-        id=_id; payload=_payload;
-        checkPayloadLength(payload);
-    }
 
     public CANId getId() {
         return id;
@@ -57,6 +53,17 @@ public class CANFDMessage extends CANMessage implements Serializable {
         return payload.length;
 	}
 
+    public boolean isRTRFrame() {
+        return RTRFrame;
+    }
+
+    public boolean isBRS() {
+        return BRS;
+    }
+
+    public boolean isESI() {
+        return ESI;
+    }
 
     @Override
     public String toString() {

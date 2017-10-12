@@ -7,8 +7,11 @@ package org.ab1rw.candora.core;
  *
  */
 public class CANAdapterException extends CANException {
+
+    private static final long serialVersionUID = 1L;
+
     private int errno;  // unix errno reported
-    private String nativeAdapterDebugInformation;   // file, linenumber.
+    private String nativeAdapterDebugInformation;
 
     public CANAdapterException(String arg) {
         super(arg);
