@@ -1,5 +1,5 @@
 package org.ab1rw.candora.core.payloads;
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import java.io.Serializable;
 import java.util.Arrays;
 /**
@@ -8,7 +8,7 @@ import java.util.Arrays;
  */
 public class CANFDMessage extends CANMessage implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -8913844174536405404L;
 
     // CAN FD has a limited range of allowed payload widths, as follows
     private static final int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
@@ -18,15 +18,15 @@ public class CANFDMessage extends CANMessage implements Serializable {
     private final boolean RTRFrame, BRS, ESI;
 
     /**
-     * ctor for the message receive phase by the adapter.
+     * Ctor - only intended to by used by the Adapter classes to synthesize a payload.
      * @param _gatewayId the arbitrary gateway ID where this CAN message arrived from.
      * @param _interfaceId the can interface ID on the gateway machine where this message appeared.
      * @param _id can address
      * @param _payload wire payload
      * @param _kernelTimeStamp The Linux SocketCAN receive timestamp (from SO_RCVTIMEO ioctl)
-     * @param rtr
-     * @param esi
-     * @param brs
+     * @param rtr Remote transmission request flag
+     * @param esi for CAN FD adapters, error status indicator
+     * @param brs from CAN FD adapters, bit rate switch
      * @throws IllegalArgumentException if an unsupported message payload length is given
      */
     public CANFDMessage(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload, long _kernelTimeStamp,

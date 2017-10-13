@@ -1,11 +1,9 @@
 package org.ab1rw.candora.core;
 
 /**
- * Base Exception for the Candora API - an adapter for Java to the Linux SocketCAN API.
+ * Base Exception Class for the Candora API.
  */
 public class CANException extends Exception {
-
-    private static final long serialVersionUID = 1L;
 
     public CANException(String msg) {
         super(msg);

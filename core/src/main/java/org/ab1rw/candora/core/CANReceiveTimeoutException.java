@@ -5,8 +5,6 @@ package org.ab1rw.candora.core;
  */
 public class CANReceiveTimeoutException extends CANException {
 
-    private static final long serialVersionUID = 1L;
-
     public CANReceiveTimeoutException() {
         super("syscall recvfrom() return EAGAIN following socket receive timeout. ");
     }

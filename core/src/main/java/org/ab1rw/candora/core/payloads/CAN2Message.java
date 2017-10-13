@@ -1,5 +1,5 @@
 package org.ab1rw.candora.core.payloads;
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -9,7 +9,7 @@ import java.util.Arrays;
  */
 public class CAN2Message extends CANMessage implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -39007540320896728L;
 
     protected final CANId id;
     protected final byte [] payload;

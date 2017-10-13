@@ -1,41 +1,54 @@
 <html>
-<head>
-
-</head>
+<head></head>
 <body>
+<h2>Features</h2>
+<li>An engineered, best-practices GPL solution using Java Exceptions, JUL Logging, Immutable objects with Bounds and Range checks,
+    thread-safety, C++ namespaces, Maven project packaging, JUnit tests, Javadoc.</li>
+<li>Provides decode of CAN Error events and treats them as a message subtype for flexible bus health monitoring.</li>
+<li>Extends and enhances to Unix socket API to provide cleaner encapsulation and stronger types.</li>
+<li>Promiscous raw send and receive mode to facilitate implementation of CAN gateway, router and sniffer applications in Java.</li>
+<li>Filtered receive mode to support small, embedded control programs on Linux hosts.</li>
+<li>Blocking read, blocking read with timeout, and non-block poll modes on receive.</li>
+<li>Uses Java Native Interface and thin layer of C++ adapter code to access Linux SocketCAN API directly.</li>
+<li>Free of memory leaks and concurrency hazards.</li>
 
-Release Announcements:
+<h2>Tested with</h2>
+<li>MCP2515 based controller pair : jARDCAN (Arduino) - PiCAN (Raspberry Pi 3)</li>
+<li>Oracle JRE bundled with Raspian</li>
 
-- Best practices solution using Java Exceptions, JUL Logging, Immutable objects with Bounds and Range checks, thread-safety.
-- Provides decode of CAN Error events and treats them as a message subtype for flexible bus health monitoring.
-- Promiscous raw send and receive mode to facilitate implementation of CAN gateway, router and sniffer applications in Java.
-- Uses Java Native Interface and thin layer of C++ adapter code to access Linux SocketCAN API directly.
-- Free of memory leaks and concurrency hazards.
+<h2>Future</h2>
+<li>Test againt MCP2517FD Controllers (when available)</li>
+<li>Test and publish binaries for MIPS and x86_64</li>
 
-Tested with:
-
-
-Future
-- Add support for non-promiscuous receive mode (i.e. Filters)
--
-
-Installing and Using the Candora Core Java Native CAN Adapter for Linux
+<h2>Installing and Using the Candora Core Java Native CAN Adapter for Linux</h2>
 
 0.  Read and understand the License that this is provided under. Understand the risks and hazards of
-    of attaching to a CAN bus in an industrial or automative product.
+    of attaching to a CAN bus in an industrial or automative product and possibly threats to life, limb and
+    property.
 
 1.  Download the Candora core JAR file and the native shared library file appropriate for your
 machine architecture of your JVM (armv7, x86_64, or mips)
 
 2.  If using Maven, and you are not using a artifact repository, then locally deploy the JAR maven artifact
-as follows. This will allow your IDE and build tooling to pickup the depedency.
-
+as follows:
+This will allow your IDE and build tooling to pickup the depedency.
+<pre>
+    $ mvn install:install-file -Dfile=core-1.0.0-SNAPSHOT.jar -DpomFile=pom.xml
+</pre>
+<pre>
     <groupId>org.ab1rw</groupId>
-    <artifactId>candora</artifactId>
     <artifactId>core</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+</pre>
 
-2. Invoke your JVM as follows
+3. Install the Java Native Shared Library on the host where your CAN hardware is located. In this case, we will
+install it in the global, trusted shared library directories.
+<pre>
+    $ sudo cp libcandora-jni.so /usr/lib
+    $ sudo /sbin/ldconfig -v
+</pre>
+
+4. Invoke your JVM as follows
 
 java -Djava.library.path=candora-core.so  -cp candora-core-1.0.0.jar;other jar;other jar;...  com.company.package.YourMainClass
 
@@ -45,11 +58,26 @@ set LD_LIBRARY_PATH=$LD_LIBRARY_PATH:candora-core.so
 finally, you could also install the shared object in your Linux
 
 3. Logger and Debugging
-Candora uses JUL (java.util.Logger) logging.  If you are using another logger framework, i.e. slf4j, then you should
-read up on and setup the appropriate jul-proxy.
-Candora will log at the SEVERE, INFO and FINE levels
+
+Candora uses JUL (java.util.Logger) logging available in any JRE.  It will log at the following levels ;
+SEVERE for non-continuable configuration problems. WARN if an Error frame is received and if error packet reception
+is enabled. INFO for expected, high-level milestones in the course of normal operation. FINE for detailed debugging
+including entry and return from the C++ native layer.
+
+If you are using another logger framework, i.e. slf4j, then you should read up on and setup the appropriate jul-proxy.
 
 4. Diagnosis and Troubleshooting
+
+<h2>Building from Source</h2>
+Maven packaging vastly simplifies the build process for the Java components. The JNI layer is built from a Makefile.
+You may need to edit the Makefile to point it to your JDK's headers, as well as modify compiler or link flags.
+The Makefile provided worked to build a JNI shared library for ARM on the Raspbian platform.
+<pre>
+    $ cd candora/core
+    $ mvn -DskipTests=true clean package
+    $ cd ../nativeapi/src/main/cxx
+    $ make clean all
+</pre>
 
 </body>
 </html>

@@ -1,7 +1,7 @@
 package org.ab1rw.candora.core.demo;
 
 import org.ab1rw.candora.core.*;
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import org.ab1rw.candora.core.adapter.*;
 import org.ab1rw.candora.core.payloads.CANErrorMessage;
 import org.ab1rw.candora.core.payloads.CANFDMessage;

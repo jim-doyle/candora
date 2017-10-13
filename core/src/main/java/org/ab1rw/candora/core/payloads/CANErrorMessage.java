@@ -1,5 +1,5 @@
 package org.ab1rw.candora.core.payloads;
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class CANErrorMessage extends CANMessage {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2930491675574423898L;
 
     private final List<String> messages;
     private ERROR_CATEGORY errorCategory;
@@ -56,12 +56,13 @@ public class CANErrorMessage extends CANMessage {
     }
 
     /**
-     *
-     * @param gatewayId
-     * @param interfaceId
-     * @param hdr
-     * @param _payload
-     * @param kernelTimeStamp
+     * Ctor - for use by the Adapter to create an Error response.
+     * @param gatewayId i.e localhost
+     * @param interfaceId i.e. can0
+     * @param hdr the can_id bits from struct canfd_frame
+     * @param _payload the payload bits from the CAN message, which instead contains controller
+     *                 and transceiveer specific error flags rather than wire data.
+     * @param kernelTimeStamp timestamp in microsecond resolution
      */
     public CANErrorMessage(String gatewayId, String interfaceId, int hdr, byte[] _payload, long kernelTimeStamp) {
         super(gatewayId, interfaceId, kernelTimeStamp);

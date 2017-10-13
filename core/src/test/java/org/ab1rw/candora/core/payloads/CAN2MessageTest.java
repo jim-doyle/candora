@@ -1,7 +1,7 @@
 package org.ab1rw.candora.core.payloads;
 
 
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import org.junit.Assert;
 import org.junit.Test;
 

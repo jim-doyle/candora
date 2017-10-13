@@ -2,7 +2,7 @@ package org.ab1rw.candora.core.adapter;
 
 import org.ab1rw.candora.core.CANAdapterException;
 import org.ab1rw.candora.core.CANException;
-import org.ab1rw.candora.core.CANId;
+import org.ab1rw.candora.core.payloads.CANId;
 import org.ab1rw.candora.core.payloads.CAN2Message;
 import org.ab1rw.candora.core.payloads.CANErrorMessage;
 import org.ab1rw.candora.core.payloads.CANFDMessage;
@@ -33,7 +33,7 @@ public class LinuxSocketCANAdapter {
      * Create an adapter using Java Native (JNI) methods to a Linux SocketCAN proxy.
      * @param gatewayId i.e. myhost.domain.org
      * @param interfaceId i.e. can0
-     * @throws CANAdapterException
+     * @throws CANAdapterException CANException usuall any adapter (socket) specific cause
      */
     public LinuxSocketCANAdapter(String gatewayId, String interfaceId) throws CANAdapterException {
         try {
@@ -51,7 +51,7 @@ public class LinuxSocketCANAdapter {
 
     /**
      * Activate the adapter prior to send or receive operations.
-     * @throws CANException
+     * @throws CANException CANException usuall any adapter (socket) specific cause
      */
     @PostConstruct
     public void init() throws CANException {
@@ -65,7 +65,7 @@ public class LinuxSocketCANAdapter {
 
     /**
      * Passivates the adapter, releasing LinuxCAN resources in the C++ native coded if needed.
-     * @throws CANException
+     * @throws CANException usuall any adapter (socket) specific cause
      */
     @PreDestroy
     public void close() throws CANException {
@@ -102,7 +102,7 @@ public class LinuxSocketCANAdapter {
      * @param payload payload
      * @param pad pad bytes, to fill the unused positions in the frame when the given payload
      *            does not completely fit one of the 16 permitted sizes.
-     * @return
+     * @return CAN FD message
      */
     public CANFDMessage create(CANId id, byte [] payload, byte pad) {
 
@@ -132,9 +132,9 @@ public class LinuxSocketCANAdapter {
 
     /**
      * Creates a CAN 2.0 Message suitable for use with the send() method
-     * @param arg
-     * @param payload
-     * @return
+     * @param arg address
+     * @param payload payload bytes
+     * @return CAN 2.0 message
      */
     public CAN2Message create(CANId arg, byte [] payload) {
         throw new RuntimeException("XXX Implement me.");
