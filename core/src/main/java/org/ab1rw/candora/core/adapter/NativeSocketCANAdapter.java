@@ -18,7 +18,10 @@ class NativeSocketCANAdapter {
 
     private final static Logger nativeLogger = Logger.getLogger(NativeSocketCANAdapter.class.getName());
 
-    // these private members are expectted by the C++ code
+    NativeSocketCANAdapter() {
+
+    }
+    // all of these private members are expected by the C++ code
     private boolean recvErrorFrames = true;
     private boolean useAllInterfaces = true;
     private String useOnlyInterfaceId;
@@ -26,6 +29,7 @@ class NativeSocketCANAdapter {
     private int recvTimeoutMicroseconds= 0;
 
     private int socket;
+    private NativeCANFilter [] filters = new NativeCANFilter[] {};
     private boolean adapterReady;
 
     void setInterfaceId(String arg) {
@@ -36,7 +40,14 @@ class NativeSocketCANAdapter {
         if (useAllInterfaces) return "*";
         else return useOnlyInterfaceId;
     }
+    void clearFilters() {
+        filters = new NativeCANFilter[] {};
+    }
 
+    void setFilters(NativeCANFilter[] arg) {
+        if (arg == null) return;
+        filters = arg;
+    }
     /**
      * Available for use, but has side effects for the send() method
      */
@@ -61,10 +72,11 @@ class NativeSocketCANAdapter {
 
 
 
-    final native String getVersionInfo();  // XXX todo
+    final native String getVersionInfo();
     final native synchronized void init() throws CANAdapterException;
     final native synchronized void close() throws CANAdapterException;
     final native synchronized void send(NativeCANFrame message) throws CANAdapterException;
     final native synchronized void receive(NativeCANFrame message) throws CANAdapterException;
+    final native boolean poll() throws CANAdapterException;
 
 }

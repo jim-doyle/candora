@@ -4,6 +4,7 @@
  * 
  * Reading Recommendations:
  *
+ * https://www.kernel.org/doc/Documentation/networking/can.txt
  * https://www.ibm.com/developerworks/library/j-jni/index.html#notc
  * https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
  * http://www.math.uni-hamburg.de/doc/java/tutorial/native1.1/implementing/array.html
@@ -42,15 +43,24 @@ namespace org_ab1rw_candora {
    jclass clsCANAdapterException;
    jclass clsCANReceiveTimeoutException;
    jclass clsCANNativeFrame;
+   jclass clsCANNativeFilter;
  } jniClassCache;
 
  static struct {
    jfieldID fldSocket;
    jfieldID fldReadyFlag;
    jfieldID fldUseAllInterfaces;
+   jfieldID fldRecvErrorFrames;
    jfieldID fldUseOnlyInterfaceId;
+   jfieldID fldFilters;
+
  } jniNativeAdapterCache;
-  
+
+  static struct {
+    jfieldID canId;
+    jfieldID mask;
+  } jniNativeFilterCache;
+
  static struct {
    jfieldID can_id;
    jfieldID can_dlc;
@@ -103,17 +113,26 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   // the code more efficient at runtime, but also much easier to read and maintain
   if (! atMostOnceInit) {
     // cache all the java classes used in the native adapter.
+    jniClassCache.clsNativeSocketCANAdapter = cls;
     jniClassCache.clsCANNativeFrame =  env->FindClass("org/ab1rw/candora/core/adapter/NativeCANFrame");
     jniClassCache.clsCANReceiveTimeoutException = env->FindClass("org/ab1rw/candora/core/CANReceiveTimeoutException");
     jniClassCache.clsCANAdapterException = env->FindClass("org/ab1rw/candora/core/CANAdapterException");
+    jniClassCache.clsCANNativeFilter =  env->FindClass("org/ab1rw/candora/core/adapter/NativeCANFilter");
+    if (env->ExceptionOccurred()) return;
+
+    jclass f = jniClassCache.clsCANNativeFilter;
+    jniNativeFilterCache.canId = env->GetFieldID(f,"socket","I");
+    jniNativeFilterCache.mask = env->GetFieldID(f,"socket","I");
     if (env->ExceptionOccurred()) return;
 
     // cache the inner part of the NativeAdapter
-    jniClassCache.clsNativeSocketCANAdapter = cls;
     jniNativeAdapterCache.fldReadyFlag = env->GetFieldID(cls,"adapterReady","Z");
     jniNativeAdapterCache.fldSocket = env->GetFieldID(cls,"socket","I");
+
+    jniNativeAdapterCache.fldRecvErrorFrames =  env->GetFieldID(cls,"recvErrorFrames","Z");
     jniNativeAdapterCache.fldUseAllInterfaces =  env->GetFieldID(cls,"useAllInterfaces","Z");
     jniNativeAdapterCache.fldUseOnlyInterfaceId = env->GetFieldID(cls,"useOnlyInterfaceId","Ljava/lang/String;");
+    jniNativeAdapterCache.fldFilters = env->GetFieldID(cls,"filters","[org/ab1rw/candora/core/adapter/NativeCANFilter;")
     if (env->ExceptionOccurred()) return;
     
     // cache the inner parts of the CANNativeFrame value object
@@ -151,11 +170,14 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
    }
 
   // enable receive of all error frames
-  can_err_mask_t err_mask = CAN_ERR_MASK;
-  if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
-                 &err_mask, sizeof(can_err_mask_t)) < 0) {
-    close(s);
-    return throwCANAdapterException(env, "error when setsockopt(CAN_RAW_ERR_FRAMES)", errno);
+  jboolean recvErrors = env->GetBooleanField(object, jniNativeAdapterCache.fldRecvErrorFrames);
+    if (recvErrors) {
+    can_err_mask_t err_mask = CAN_ERR_MASK;
+    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
+                     &err_mask, sizeof(can_err_mask_t)) < 0) {
+        close(s);
+        return throwCANAdapterException(env, "error when setsockopt(CAN_RAW_ERR_FRAMES)", errno);
+    }
   }
 
   // setup the receive/poll timeout, so long as there is a non-zero value present.
@@ -201,7 +223,9 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   } else {
     addr.can_ifindex = 0;  // To bind on all CAN interface, the interface index is set to zero.
   }
-  
+
+
+
   if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         close(s);
         return throwCANAdapterException(env, "bind()", errno);    
@@ -280,6 +304,37 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     return throwCANAdapterException(env, "sendto()", errno);    
   }
   bzero(&txframe.data, txframe.len); 
+}
+
+/**
+ * Polls the socket to test if data is waiting to be received.
+ * returns true is a subsequent call to recvfrom() will not block.
+ */
+JNIEXPORT jboolean JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_poll (JNIEnv *, jobject) {
+
+    if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == false) {
+            return throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
+    }
+
+    jint socket = env->GetIntField(object, jniNativeAdapterCache.fldSocket);
+
+    int result;
+    fd_set readset;
+    FD_ZERO(&readset);
+    FD_SET(socket, &readset);
+
+   int result = select(socket, &readset, NULL, NULL, NULL);
+   if (result < 0) {
+    return throwCANAdapterException(env, "select()", errno);
+   }
+
+   if (result > 0) {
+      if (FD_ISSET(socket_fd, &readset)) {
+         /* The socket has data available to be read */
+         return JNI_TRUE;
+      }
+   }
+
 }
 
 /**

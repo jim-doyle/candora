@@ -2,15 +2,12 @@ package org.ab1rw.candora.core.adapter;
 
 import org.ab1rw.candora.core.CANAdapterException;
 import org.ab1rw.candora.core.CANException;
-import org.ab1rw.candora.core.payloads.CANId;
-import org.ab1rw.candora.core.payloads.CAN2Message;
-import org.ab1rw.candora.core.payloads.CANErrorMessage;
-import org.ab1rw.candora.core.payloads.CANFDMessage;
-import org.ab1rw.candora.core.payloads.CANMessage;
+import org.ab1rw.candora.core.payloads.*;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +38,7 @@ public class LinuxSocketCANAdapter {
         } catch (UnsatisfiedLinkError ule) {
             log.log(Level.SEVERE, "", ule);
             throw new CANAdapterException("Error loading libcandora-jni.so. Set LD_LIBRARY_PATH or use -Djava.library.path, " +
-                    "check for for existence and access permissions.",ule);
+                    "or install in your global, trusted shared libraries directory. Further check for for existence and access permissions.",ule);
         }
 
         nativeAdapter = new NativeSocketCANAdapter();
@@ -94,6 +91,29 @@ public class LinuxSocketCANAdapter {
      */
     void setErrorFramesEnabled(boolean arg) {
         nativeAdapter.setErrorFramesEnabled(arg);
+    }
+
+    /**
+     * For configuration, set the CAN address filters to use when the Adapter is configured in non-promiscuous mode.
+     *
+     * @param filters set of address filter masks to apply to the socket
+     */
+    void setCANIdFilters(Set<CANIdFilter> filters) {
+        // Provide idiot proofing against bad input to the native adapter
+        if (filters == null) throw new IllegalArgumentException("setCANIdFilters() cannot accept a null array argument");
+        int valid = 0;
+        for (CANIdFilter f : filters) {
+            if (f!=null) valid++;
+        }
+        NativeCANFilter [] fx = new NativeCANFilter[valid];
+        int i=0;
+        for (CANIdFilter f : filters) {
+            if (f!=null) {
+                fx[i].can_id = f.getId();
+                fx[i].can_mask = f.getMask();
+                i++;
+            };
+        }
     }
 
     /**
