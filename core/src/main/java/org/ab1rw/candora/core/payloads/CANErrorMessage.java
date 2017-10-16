@@ -142,7 +142,7 @@ public class CANErrorMessage extends CANMessage {
 
             switch (payload[3]) {
                 case 0:
-                    messages.add("Unspecified error reported in payload[3]");
+                    messages.add("Unspecified error reported in data[3]");
                     break;
                 case 0x3:
                     messages.add("Start of Frame");
@@ -211,7 +211,7 @@ public class CANErrorMessage extends CANMessage {
         if (errorCategory.equals(ERROR_CATEGORY.Transceiver_Fault)) {
             switch (payload[4]) {
                 case 0:
-                    messages.add("Unspecified error reported in payload[4]");
+                    messages.add("Unspecified error reported in data[4]");
                     break;
                 case 0x4:
                     messages.add("CANH Short to BAT");

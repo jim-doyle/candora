@@ -194,7 +194,7 @@ public class LinuxSocketCANAdapter {
             // in this case, the error details are hiding in the can id bits; delegate the construction
             // off to our dedicated error message class to handle deciphering the bitwise data.
             log.log(Level.WARNING,"CAN bus error observed on {0}", new Object [] { f.canInterface });
-            return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.timestamp);
+            return new CANErrorMessage(gatewayId, f.canInterface, f.can_id, f.can_data, f.recvTimestamp);
         }
 
         // Not an error frame, then construct an immutable value object to return to the caller.
@@ -209,6 +209,6 @@ public class LinuxSocketCANAdapter {
         // BRS: if ((f.can_fd_flags & 0x01) > 0)
         // ESI: if ((f.can_fd_flags & 0x02) > 0)
 
-        return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.timestamp, f.rtrFlag, (f.can_fd_flags & 0x01)>0, (f.can_fd_flags & 0x02) > 0);
+        return new CANFDMessage(gatewayId, f.canInterface, id, f.can_data,  f.recvTimestamp, f.rtrFlag, (f.can_fd_flags & 0x01)>0, (f.can_fd_flags & 0x02) > 0);
     }
 }

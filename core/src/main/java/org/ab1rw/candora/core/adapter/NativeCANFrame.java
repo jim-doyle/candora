@@ -38,6 +38,6 @@ class NativeCANFrame {
     protected boolean errFlag; // set by native adapter if payload contains error bits
     protected boolean rtrFlag; // set by native adapter if payload is a Remote Transmission Request
 
-    protected int timestamp;   // set by native adapter, SocketCAN implementation specific timestamp.
+    protected int recvTimestamp; // set by native adapter, SocketCAN implementation specific timestamp.
 
 }

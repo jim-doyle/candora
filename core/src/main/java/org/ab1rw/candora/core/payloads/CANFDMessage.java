@@ -18,7 +18,7 @@ public class CANFDMessage extends CANMessage implements Serializable {
     private final boolean RTRFrame, BRS, ESI;
 
     /**
-     * Ctor - only intended to by used by the Adapter classes to synthesize a payload.
+     * Ctor - only intended to by used by the Adapter classes on receive to synthesize a payload.
      * @param _gatewayId the arbitrary gateway ID where this CAN message arrived from.
      * @param _interfaceId the can interface ID on the gateway machine where this message appeared.
      * @param _id can address
