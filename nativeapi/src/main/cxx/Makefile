@@ -24,7 +24,7 @@ org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h:
 # Shared library
 libcandora-jni.so: org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o gitversion.o
 	ld -shared -fpic org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o gitversion.o -o libcandora-jni.so
-    echo "Packaged shared library object..."
+	echo "Packaged shared library object..."
 
 org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.o :  org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.cpp \
                                                             org_ab1rw_candora_core_adapter_NativeSocketCANAdapter.h

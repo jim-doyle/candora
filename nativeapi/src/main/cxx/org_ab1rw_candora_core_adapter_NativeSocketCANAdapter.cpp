@@ -132,7 +132,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeAdapterCache.fldRecvErrorFrames =  env->GetFieldID(cls,"recvErrorFrames","Z");
     jniNativeAdapterCache.fldUseAllInterfaces =  env->GetFieldID(cls,"useAllInterfaces","Z");
     jniNativeAdapterCache.fldUseOnlyInterfaceId = env->GetFieldID(cls,"useOnlyInterfaceId","Ljava/lang/String;");
-    jniNativeAdapterCache.fldFilters = env->GetFieldID(cls,"filters","[org/ab1rw/candora/core/adapter/NativeCANFilter;")
+    jniNativeAdapterCache.fldFilters = env->GetFieldID(cls,"filters","[org/ab1rw/candora/core/adapter/NativeCANFilter;");
     if (env->ExceptionOccurred()) return;
     
     // cache the inner parts of the CANNativeFrame value object
@@ -161,22 +161,34 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     return throwCANAdapterException(env, "socket()", errno);
   }
     
-   // enable support for mutual CAN 2.0x and CAN FD frames
+   // enable support for mutual CAN 2.0x and CAN FD frames on receive
    int enable = 1;
    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
 		  &enable, sizeof(enable)) < 0) {
+     throwCANAdapterException(env, "error when setsockopt(CAN_RAW_FD_FRAMES)", errno);
      close(s);
-     return throwCANAdapterException(env, "error when setsockopt(CAN_RAW_FD_FRAMES)", errno);
+     return;
    }
 
+   // Determine if this interface can do CAN FD on send
+   
+     int maxmtu = 0;
+   if (ioctl(s, SIOCGIFMTU, &maxmtu) < 0) {
+     throwCANAdapterException(env, "error when ioctl(SIOCGIFMTU)", errno);
+     close(s);
+     return;
+   }
+   
   // enable receive of all error frames
   jboolean recvErrors = env->GetBooleanField(object, jniNativeAdapterCache.fldRecvErrorFrames);
     if (recvErrors) {
     can_err_mask_t err_mask = CAN_ERR_MASK;
     if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_ERR_FILTER,
                      &err_mask, sizeof(can_err_mask_t)) < 0) {
-        close(s);
-        return throwCANAdapterException(env, "error when setsockopt(CAN_RAW_ERR_FRAMES)", errno);
+       
+        throwCANAdapterException(env, "error when setsockopt(CAN_RAW_ERR_FRAMES)", errno);
+	close(s);
+	return;
     }
   }
 
@@ -192,8 +204,10 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     recv_timeout.tv_usec=to_us;
     if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char *)&recv_timeout,
                  sizeof(struct timeval)) <0 ) {
+
+      throwCANAdapterException(env, "error when setsockopt(SO_RCVTIMEO)", errno);\
       close(s);
-      return throwCANAdapterException(env, "error when setsockopt(SO_RCVTIMEO)", errno);\
+      return;
     }
 
   } else {
@@ -216,8 +230,9 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
       env->ReleaseStringUTFChars(ifc, foo); 
 
       if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-            close(s);
-            return throwCANAdapterException(env, "error when ioctl(SIOCGIFINDEX)", errno);
+            throwCANAdapterException(env, "error when ioctl(SIOCGIFINDEX)", errno);
+	    close(s);
+	    return;
       }
       addr.can_ifindex = ifr.ifr_ifindex;
   } else {
@@ -227,8 +242,9 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 
 
   if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        close(s);
-        return throwCANAdapterException(env, "bind()", errno);    
+        throwCANAdapterException(env, "bind()", errno);
+	close(s);
+	return;
   }
 
   // Store back into the native object the unix handles (socket) needed to service future method calls...
@@ -308,33 +324,35 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 
 /**
  * Polls the socket to test if data is waiting to be received.
- * returns true is a subsequent call to recvfrom() will not block.
+ * Returns: true is a subsequent call to recvfrom() will not block.
  */
-JNIEXPORT jboolean JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_poll (JNIEnv *, jobject) {
+JNIEXPORT jboolean JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapter_poll (JNIEnv * env, jobject object) {
 
     if (env->GetBooleanField(object, jniNativeAdapterCache.fldReadyFlag) == false) {
-            return throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
+            throwCANAdapterException(env, "NativeAdapter not initialized or has been closed.", 0);
+	    return -1; // jvm will throw on return of scope of control
     }
 
     jint socket = env->GetIntField(object, jniNativeAdapterCache.fldSocket);
 
-    int result;
     fd_set readset;
     FD_ZERO(&readset);
     FD_SET(socket, &readset);
 
    int result = select(socket, &readset, NULL, NULL, NULL);
    if (result < 0) {
-    return throwCANAdapterException(env, "select()", errno);
+    throwCANAdapterException(env, "select()", errno);
+    return -1; // jvm will throw on return of scope of control
    }
 
    if (result > 0) {
-      if (FD_ISSET(socket_fd, &readset)) {
+      if (FD_ISSET(socket, &readset)) {
          /* The socket has data available to be read */
          return JNI_TRUE;
       }
    }
 
+   return JNI_FALSE;
 }
 
 /**
@@ -419,5 +437,13 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   env->DeleteLocalRef(newBuffer);
   bzero(&rxframe.data, rxframe.len);
 
+}
+
+
+struct can_filter * make(JNIEnv * env, jobject object, jobject arg1) {
+  int depth = 12;
+  struct can_filter * tmp = (struct can_filter *) malloc(sizeof(struct can_filter)*depth);
+  free(tmp);
+  
 }
 
