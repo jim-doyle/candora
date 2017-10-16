@@ -1,0 +1,17 @@
+JNI Programming Notes
+
+A number of JNI programming idioms are demonstrated here:
+1.  Accessing a Java byte [] array from C++ ; for read access and to mutate values
+2.  Creating a new Java String in C++ and returning it
+3.  Throwing a Java exception from C++ code.
+4.  Using Class, Field and Accessors to touch a variety of data types (bool, int, String, arrays)
+5.  Storing UNIX socket descriptors on a Java instance by using a private int field.
+
+
+Regarding Memory Allocation
+-  Most of our temporary values are allocated on the stack by the compiler. THis is because UNIX system calls
+are blocking and synchronous, so deallocation occurs implicitly when the stack unwinds.
+-  We use JNI allocation for strings and arrays.
+
+
+

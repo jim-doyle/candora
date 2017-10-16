@@ -9,6 +9,7 @@ public class CANIdFilter {
     private final int mask;
     private int id;
 
+    public static final int CAN_INV_FILTER = 0x20000000;
 
     public CANIdFilter(CANId _id, int _mask) {
         if (_mask == 0) throw new IllegalArgumentException("Filter mask must be non-zero, given "+_mask);
