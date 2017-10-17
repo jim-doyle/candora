@@ -167,6 +167,9 @@ public class LinuxSocketCANAdapter {
      */
     public void send(CANFDMessage message) throws CANException {
 
+	assert message != null;
+	assert message.getPayload() != null;
+
         NativeCANFrame f = new NativeCANFrame();
         f.can_data = message.getPayload();
         f.can_dlc = (byte) message.getPayloadLength();

@@ -68,7 +68,7 @@ namespace org_ab1rw_candora {
    jfieldID reserved0, reserved1;
    jfieldID can_data;
    jfieldID effFlag, errFlag, rtrFlag;
-   jfieldID timestamp;
+   jfieldID recvTimestamp;
    jfieldID canInterface;
  } jniNativeFrameCache;
 
@@ -121,8 +121,8 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     if (env->ExceptionOccurred()) return;
 
     jclass f = jniClassCache.clsCANNativeFilter;
-    jniNativeFilterCache.canId = env->GetFieldID(f,"socket","I");
-    jniNativeFilterCache.mask = env->GetFieldID(f,"socket","I");
+    jniNativeFilterCache.canId = env->GetFieldID(f,"can_id","I");
+    jniNativeFilterCache.mask = env->GetFieldID(f,"can_mask","I");
     if (env->ExceptionOccurred()) return;
 
     // cache the inner part of the NativeAdapter
@@ -132,7 +132,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeAdapterCache.fldRecvErrorFrames =  env->GetFieldID(cls,"recvErrorFrames","Z");
     jniNativeAdapterCache.fldUseAllInterfaces =  env->GetFieldID(cls,"useAllInterfaces","Z");
     jniNativeAdapterCache.fldUseOnlyInterfaceId = env->GetFieldID(cls,"useOnlyInterfaceId","Ljava/lang/String;");
-    jniNativeAdapterCache.fldFilters = env->GetFieldID(cls,"filters","[org/ab1rw/candora/core/adapter/NativeCANFilter;");
+    //jniNativeAdapterCache.fldFilters = env->GetFieldID(cls,"filters","[org/ab1rw/candora/core/adapter/NativeCANFilter;");
     if (env->ExceptionOccurred()) return;
     
     // cache the inner parts of the CANNativeFrame value object
@@ -144,7 +144,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
     jniNativeFrameCache.effFlag = env->GetFieldID(nf,"effFlag","Z");
     jniNativeFrameCache.errFlag = env->GetFieldID(nf,"errFlag","Z");
     jniNativeFrameCache.rtrFlag = env->GetFieldID(nf,"rtrFlag","Z");
-    jniNativeFrameCache.timestamp = env->GetFieldID(nf,"timestamp","I");
+    jniNativeFrameCache.recvTimestamp = env->GetFieldID(nf,"recvTimestamp","I");
     jniNativeFrameCache.canInterface = env->GetFieldID(nf,"canInterface","Ljava/lang/String;");
     if (env->ExceptionOccurred()) return;
     atMostOnceInit = true;
@@ -172,12 +172,12 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 
    // Determine if this interface can do CAN FD on send
    
-     int maxmtu = 0;
-   if (ioctl(s, SIOCGIFMTU, &maxmtu) < 0) {
-     throwCANAdapterException(env, "error when ioctl(SIOCGIFMTU)", errno);
-     close(s);
-     return;
-   }
+   //int maxmtu = 0;
+   //if (ioctl(s, SIOCGIFMTU, &maxmtu) < 0) {
+   //  throwCANAdapterException(env, "error when ioctl(SIOCGIFMTU)", errno);
+   //  close(s);
+   //  return;
+   // }
    
   // enable receive of all error frames
   jboolean recvErrors = env->GetBooleanField(object, jniNativeAdapterCache.fldRecvErrorFrames);
@@ -225,9 +225,9 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
       jstring ifc = (jstring) env->GetObjectField(object, jniNativeAdapterCache.fldUseOnlyInterfaceId);
       jsize len = env->GetStringLength(ifc);
       jboolean iscopy = true;
-      const char * foo = env->GetStringUTFChars(ifc, &iscopy);
-      strncpy(ifr.ifr_name, foo , len );
-      env->ReleaseStringUTFChars(ifc, foo); 
+      const char * ifcname = env->GetStringUTFChars(ifc, &iscopy);
+      strncpy(ifr.ifr_name, ifcname , len );
+      env->ReleaseStringUTFChars(ifc, ifcname); 
 
       if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
             throwCANAdapterException(env, "error when ioctl(SIOCGIFINDEX)", errno);
@@ -378,7 +378,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
                     0, (struct sockaddr*)&addr, &len);
   if (nbytes < 0) {
     int e = errno;
-    if (e == EAGAIN) {
+    if (e == EAGAIN || EWOULDBLOCK) {
       return throwCANReceiveTimeoutException(env);
     }
     return throwCANAdapterException(env, "while doing system call recvfrom() on socket", errno);
@@ -408,7 +408,7 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
   env->SetIntField(arg1, jniNativeFrameCache.can_id, rxframe.can_id);
   env->SetByteField(arg1, jniNativeFrameCache.can_dlc, rxframe.len);
   env->SetByteField(arg1, jniNativeFrameCache.can_fd_flags, rxframe.flags);
-  env->SetIntField(arg1, jniNativeFrameCache.timestamp, recv_timestamp.tv_usec);
+  env->SetIntField(arg1, jniNativeFrameCache.recvTimestamp, recv_timestamp.tv_usec);
 
   env->SetBooleanField(arg1, jniNativeFrameCache.errFlag, false);
   env->SetBooleanField(arg1, jniNativeFrameCache.effFlag, false);
@@ -440,7 +440,23 @@ JNIEXPORT void JNICALL Java_org_ab1rw_candora_core_adapter_NativeSocketCANAdapte
 }
 
 
+void setLoopback() {
+    int loopback = 0; /* 0 = disabled, 1 = enabled (default) */
+    int s = -1;
+    setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
+}
+
+void setRecvOwnMessages() {
+int recv_own_msgs = 1; /* 0 = disabled (default), 1 = enabled */
+
+ int s=-1;
+    setsockopt(s, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS,
+               &recv_own_msgs, sizeof(recv_own_msgs));
+
+}
+
 struct can_filter * make(JNIEnv * env, jobject object, jobject arg1) {
+
   int depth = 12;
   struct can_filter * tmp = (struct can_filter *) malloc(sizeof(struct can_filter)*depth);
   free(tmp);
