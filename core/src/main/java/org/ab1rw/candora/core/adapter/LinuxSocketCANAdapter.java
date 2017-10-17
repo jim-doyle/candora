@@ -30,7 +30,7 @@ public class LinuxSocketCANAdapter {
      * Create an adapter using Java Native (JNI) methods to a Linux SocketCAN proxy.
      * @param gatewayId i.e. myhost.domain.org
      * @param interfaceId i.e. can0
-     * @throws CANAdapterException CANException usuall any adapter (socket) specific cause
+     * @throws CANAdapterException CANException usually any adapter (socket) specific cause
      */
     public LinuxSocketCANAdapter(String gatewayId, String interfaceId) throws CANAdapterException {
         try {
@@ -116,15 +116,20 @@ public class LinuxSocketCANAdapter {
         }
     }
 
+    public CANFDMessage create(CANId id, byte [] payload, byte pad) {
+        return create(id,payload,pad,false);
+    }
+
     /**
      * Creates a CAN FD Message suitable for use with the send() method, selecting a CAN FD frame length and padding as needed.
      * @param id CAN bus ID.
      * @param payload payload
      * @param pad pad bytes, to fill the unused positions in the frame when the given payload
      *            does not completely fit one of the 16 permitted sizes.
+     * @param rtr true if you wish to construct an RTR frame, otherwise, and most of the time false.
      * @return CAN FD message
      */
-    public CANFDMessage create(CANId id, byte [] payload, byte pad) {
+    public CANFDMessage create(CANId id, byte [] payload, byte pad, boolean rtr) {
 
         // find the least possible CAN FD dlc that will fit this payload.
         int [] allowedPayloadWidths = { 0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64 };
@@ -147,7 +152,7 @@ public class LinuxSocketCANAdapter {
         if (allowedPayloadWidths[use] > payload.length) {
             Arrays.fill(p, payload.length, allowedPayloadWidths[use], pad);
         }
-        return null;
+        return new CANFDMessage(gatewayId, nativeAdapter.getInterfaceId(), id, payload, rtr);
     }
 
     /**

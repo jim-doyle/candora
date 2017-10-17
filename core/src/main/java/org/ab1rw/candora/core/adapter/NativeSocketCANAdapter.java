@@ -75,6 +75,8 @@ class NativeSocketCANAdapter {
     final native String getVersionInfo();
     final native synchronized void init() throws CANAdapterException;
     final native synchronized void close() throws CANAdapterException;
+    final native synchronized void setLoopbackMode(boolean arg) throws CANAdapterException;
+    final native synchronized void setReceiveOwnMessages(boolean arg) throws CANAdapterException;
     final native synchronized void send(NativeCANFrame message) throws CANAdapterException;
     final native synchronized void receive(NativeCANFrame message) throws CANAdapterException;
     final native boolean poll() throws CANAdapterException;

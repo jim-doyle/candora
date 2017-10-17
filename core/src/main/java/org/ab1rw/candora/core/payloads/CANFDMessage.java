@@ -39,6 +39,23 @@ public class CANFDMessage extends CANMessage implements Serializable {
         RTRFrame=rtr; BRS=brs; ESI=esi;
     }
 
+    /**
+     * Ctor - only intended to be used by the Adapter to synthesize a new message in preparation to send.
+     * @param _gatewayId the arbitrary gateway ID where this CAN message arrived from.
+     * @param _interfaceId the native CAN interface that this message will go out out
+     * @param _id can address
+     * @param rtr Remote transmission request flag
+     */
+    public CANFDMessage(String _gatewayId, String _interfaceId, CANId _id, byte[] _payload,
+                        boolean rtr) {
+        super(_gatewayId, _interfaceId, -1);
+        id=_id;
+        payload = _payload;
+        if (_id == null || _payload == null) throw new IllegalArgumentException("ctor: neither can ID nor payload argument can be null valued.");
+        checkPayloadLength(payload);
+        RTRFrame=rtr; BRS=true; ESI=true;
+    }
+
 
     public CANId getId() {
         return id;
