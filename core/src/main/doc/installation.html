@@ -6,7 +6,7 @@
     thread-safety, C++ namespaces, Maven project packaging, JUnit tests, Javadoc.</li>
 <li>Provides decode of CAN Error events and treats them as a message subtype for flexible bus health monitoring.</li>
 <li>Extends and enhances to Unix socket API to provide cleaner encapsulation and stronger types.</li>
-<li>Promiscous raw send and receive mode to facilitate implementation of CAN gateway, router and sniffer applications in Java.</li>
+<li>Promiscous raw receive mode to facilitate implementation of CAN gateway, router and sniffer applications in Java.</li>
 <li>Filtered receive mode to support small, embedded control programs on Linux hosts.</li>
 <li>Blocking read, blocking read with timeout, and non-block poll modes on receive.</li>
 <li>Uses Java Native Interface and thin layer of C++ adapter code to access Linux SocketCAN API directly.</li>
@@ -78,6 +78,9 @@ The Makefile provided worked to build a JNI shared library for ARM on the Raspbi
     $ cd ../nativeapi/src/main/cxx
     $ make clean all
 </pre>
+
+* CAN is a broadcast-only bus with a source address (but no dest address) and the address ID
+is used for media access prioritization  Further, unlike ethernet, it has strong delivery guarantee semantics.
 
 </body>
 </html>

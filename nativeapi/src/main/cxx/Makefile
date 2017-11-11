@@ -5,7 +5,7 @@
 # This is the default location of the Oracle JDK on Raspberry Pi
 JAVA_HOME=/usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
 
-CPPFLAGS=-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -g 
+CPPFLAGS=-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -g -D_REENTRANT
 
 all:    libcandora-jni.so
 

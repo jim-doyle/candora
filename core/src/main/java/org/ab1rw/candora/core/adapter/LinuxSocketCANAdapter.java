@@ -14,8 +14,13 @@ import java.util.logging.Logger;
 /**
  * A Linux SocketCAN API Adapter for Java.
  *
- * These requirements include promiscuous mode exposure of all bus traffic on all interfaces to the adapter,
- * treatment of Error frames, ability to transmit CAN packets, timestamping feature as provided by the SocketCAN API, etc.
+ * Provides:
+ * 1. Ability to transmit CAN frames on a specific interface
+ * 2. Ability to receive CAN frames in promiscous or selective (filtered) mode.
+ * 3. Receipt of CAN Error events under all circumstances
+ * 4. Acquisition of SocketCAN timestamp upon packet receipt
+ * 5. Ability to poll a CAN Socket in non-blocking manner for pending receive
+ * 6. Ability to receive under timeout or blocking limits.
  *
  * The implementation must be thread-safe, despite the fact that the Native adapter maintains singletons.
  *

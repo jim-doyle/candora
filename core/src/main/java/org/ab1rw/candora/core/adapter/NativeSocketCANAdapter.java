@@ -48,6 +48,7 @@ class NativeSocketCANAdapter {
         if (arg == null) return;
         filters = arg;
     }
+
     /**
      * Available for use, but has side effects for the send() method
      */
